@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Scout automático de fútbol sala: corta el partido en jugadas, corrígelo con un clic y compártelo con tus jugadores." />
+    <!-- Mientras esté en desarrollo, que no lo indexe nadie. -->
+    <meta name="robots" content="noindex" />
+    <title>Futsal Scout</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="cabecera">
+      <a class="marca" href="/">
+        <svg class="marca-logo" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+          <rect width="32" height="32" rx="8" class="marca-fondo" />
+          <rect x="6.5" y="9" width="19" height="14" rx="1.5" class="marca-trazo" />
+          <line x1="16" y1="9" x2="16" y2="23" class="marca-trazo" />
+          <circle cx="16" cy="16" r="3" class="marca-trazo" />
+        </svg>
+        <span class="marca-nombre">Futsal Scout</span>
+      </a>
+      <span class="insignia">En desarrollo</span>
+    </header>
+
+    <main class="contenido">
+      <section class="intro">
+        <h1>Nuevo partido</h1>
+        <p>
+          Sube el vídeo y Futsal Scout lo cortará en jugadas: quitará los ratos de balón parado, podrás
+          corregirlo con un clic y compartir los clips con tu equipo.
+        </p>
+      </section>
+
+      <form id="form-subida" class="tarjeta" novalidate>
+        <fieldset id="bloque-video" class="bloque">
+          <legend><span class="paso">1</span> Vídeo del partido</legend>
+
+          <div id="zona-video" class="zona">
+            <input id="entrada-video" class="solo-visual" type="file" accept="video/mp4,video/quicktime,.mp4,.m4v,.mov" />
+            <label for="entrada-video" class="zona-video">
+              <svg class="zona-icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 15V4m0 0L8 8m4-4 4 4M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15" />
+              </svg>
+              <span class="zona-titulo solo-raton">Arrastra aquí el vídeo del partido</span>
+              <span class="zona-texto solo-raton">o <span class="zona-enlace">elígelo de tu ordenador</span></span>
+              <span class="zona-titulo solo-tactil">Toca para elegir el vídeo del partido</span>
+              <span class="zona-nota">MP4 o MOV: de una cámara, de un móvil o descargado de Veo.</span>
+            </label>
+          </div>
+
+          <div id="ficha-video" class="ficha" hidden>
+            <div class="ficha-cabecera">
+              <p id="nombre-video" class="ficha-nombre"></p>
+              <button id="btn-cambiar-video" type="button" class="boton boton-secundario">Cambiar vídeo</button>
+            </div>
+            <dl id="datos-video" class="datos"></dl>
+          </div>
+
+          <ul id="problemas-video" class="problemas" aria-live="polite" hidden></ul>
+        </fieldset>
+
+        <fieldset class="bloque">
+          <legend><span class="paso">2</span> Datos del partido</legend>
+          <div class="campos">
+            <div class="campo">
+              <label for="campo-local">Equipo local</label>
+              <input id="campo-local" name="local" type="text" maxlength="60" autocomplete="off" required aria-describedby="mensaje-local" />
+              <p id="mensaje-local" class="mensaje-campo" hidden></p>
+            </div>
+            <div class="campo">
+              <label for="campo-visitante">Equipo visitante</label>
+              <input id="campo-visitante" name="visitante" type="text" maxlength="60" autocomplete="off" required aria-describedby="mensaje-visitante" />
+              <p id="mensaje-visitante" class="mensaje-campo" hidden></p>
+            </div>
+            <div class="campo campo-fecha">
+              <label for="campo-fecha">Fecha</label>
+              <input id="campo-fecha" name="fecha" type="date" required aria-describedby="mensaje-fecha" />
+              <p id="mensaje-fecha" class="mensaje-campo" hidden></p>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="acciones">
+          <button id="btn-subir" type="submit" class="boton boton-principal" disabled>Subir y analizar</button>
+          <p id="estado-subida" class="estado" role="status" aria-live="polite"></p>
+          <p class="nota">
+            La subida llega con la primera versión. De momento, la página solo comprueba el vídeo en tu
+            navegador: no sale de tu ordenador.
+          </p>
+        </div>
+      </form>
+    </main>
+
+    <footer class="pie">Futsal Scout · versión <span id="version">—</span></footer>
+    <script type="module" src="/src/cliente/main.ts"></script>
+  </body>
+</html>
