@@ -17,5 +17,7 @@
   },
   "observability": {
     "enabled": true
-  }
+  },
+  // Trazas de error con los nombres del codigo fuente en el panel de Cloudflare.
+  "upload_source_maps": true
 }

@@ -20,9 +20,16 @@ function version(): string {
 export default defineConfig({
   // El plugin compila el Worker y los estaticos juntos, y en `vite dev` y
   // `vite preview` ejecuta el Worker en workerd, el mismo motor que en produccion.
-  plugins: [cloudflare()],
+  plugins: [cloudflare({ viteEnvironment: { name: 'servidor' } })],
   define: {
     __VERSION__: JSON.stringify(version()),
   },
-  build: { target: 'es2022', sourcemap: true },
+  build: { target: 'es2022' },
+  environments: {
+    // Los source maps del cliente se publicarian como un estatico mas y
+    // dejarian leer el codigo; los del Worker se suben a Cloudflare, que los
+    // guarda en privado para ensenar trazas de error legibles.
+    client: { build: { sourcemap: false } },
+    servidor: { build: { sourcemap: true } },
+  },
 });
