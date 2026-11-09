@@ -1,13 +1,21 @@
-// Un solo Worker sirve la pagina (estaticos) y, mas adelante, la API.
+// Un solo Worker sirve la pagina (estaticos) y la API.
 // El directorio de los estaticos no se pone aqui: lo fija @cloudflare/vite-plugin
 // al compilar.
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "futsal-scout",
+  "main": "src/servidor/indice.ts",
   "compatibility_date": "2026-11-01",
   "assets": {
+    "binding": "ASSETS",
     // Cualquier ruta que no sea un fichero devuelve index.html: la navegacion
     // la lleva la propia pagina.
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // Sin esto, la regla anterior se comeria tambien /api/* y devolveria
+    // index.html en vez de llegar al Worker.
+    "run_worker_first": ["/api/*"]
+  },
+  "observability": {
+    "enabled": true
   }
 }
