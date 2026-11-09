@@ -1,2 +1,9 @@
-// Punto de entrada del navegador. El formulario de subida llega en su propio modulo.
-document.documentElement.dataset.version = __VERSION__;
+import './estilos/tokens.css';
+import './estilos/base.css';
+import './estilos/video.css';
+import './estilos/campos.css';
+import { el } from './dom';
+import { iniciarFormulario } from './subida/formulario';
+
+el('version').textContent = __VERSION__;
+iniciarFormulario();
