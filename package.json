@@ -15,7 +15,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "tipos:worker": "wrangler types src/servidor/worker-configuration.d.ts",
-    "typecheck": "npm run tipos:worker && tsc -p tsconfig.cliente.json && tsc -p tsconfig.servidor.json && tsc -p tsconfig.json",
+    "typecheck": "npm run tipos:worker && tsc -p tsconfig.nucleo.json && tsc -p tsconfig.cliente.json && tsc -p tsconfig.servidor.json && tsc -p tsconfig.json",
     "deploy": "npm run build && wrangler deploy",
     "videos:prueba": "bash tools/crear_videos_prueba.sh"
   },
