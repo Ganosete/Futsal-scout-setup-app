@@ -83,3 +83,14 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
   90 en ffmpeg, 270 en Mediabunny).
 - Miniflare avisa al arrancar de que no puede descargar `Request.cf` si no hay internet; es
   inofensivo.
+- **Las operaciones del editor son puras y devuelven un estado nuevo** (`editor/operaciones.ts`):
+  así deshacer es guardar el estado anterior entero. Todo lo que tocan queda `manual` y se apunta
+  en `correcciones`.
+- **Cambiar las partes no recalcula todo** (`editor/limitesPartes.ts`): se recortan los
+  fragmentos que hay y solo se calcula lo que antes quedaba fuera. Recalcular resucitaría lo que
+  el entrenador ya había quitado.
+- **Un fragmento de menos de 3 s se une al vecino, no se tira** (`nucleo/fragmentos.ts`): puede
+  ser una falta que acaba en gol.
+- WebCodecs solo existe en un contexto seguro: `localhost` vale, `about:blank` no.
+- En Playwright, un clic por coordenadas (`page.mouse`) en algo que queda por debajo del borde
+  de la ventana cae fuera: usa `locator.click({ position })`, que desplaza antes.

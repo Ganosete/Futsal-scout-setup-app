@@ -10,9 +10,18 @@ compartir los clips con tus jugadores.
 
 ## Estado
 
-**Entrega 0, la base.** Hay una página con el formulario de «Nuevo partido»: eliges el vídeo y el
-navegador lo comprueba al momento sin subirlo (duración, imagen, sonido, tamaño, y si hay algo
-que impida usarlo o que vaya a salir peor). La subida y el análisis llegan con el MVP (fase 1).
+**Fase 1 (MVP) en curso.** Todo lo que hay funciona en el navegador, sin subir nada todavía:
+
+1. **Nuevo partido:** eliges el vídeo y se comprueba al momento (duración, imagen, sonido,
+   tamaño, y si hay algo que impida usarlo o que vaya a salir peor).
+2. **Buscar las jugadas:** el navegador escucha el silbato y mide el movimiento de la imagen, y
+   corta el partido en fragmentos de juego. Propone el descanso si lo encuentra.
+3. **Revisar:** un editor con el vídeo, la línea de tiempo y la lista de fragmentos. Equipo con
+   un clic, unir, partir, ajustar inicio y fin, quitar, marcar las partes, y deshacer, todo con
+   atajos de teclado.
+
+Falta la subida a R2 (las correcciones se pierden al recargar la página), la descarga en MP4 y
+el enlace para los jugadores.
 
 ## Qué hará
 
@@ -95,7 +104,7 @@ proteger la web con Cloudflare Access. Los comandos irán aquí cuando lleguen.
 | Fase | Contenido | Puntos |
 |---|---|---|
 | **0. Base** ✅ | Repositorio, estructura, TypeScript, Vitest, Playwright, CI, despliegue y formulario de subida que valida el vídeo en el navegador | — |
-| **1. MVP** | Subida reanudable a R2 y partidos en D1, con Cloudflare Access · análisis en el navegador mientras sube (silbato + movimiento + calmas largas) y límites de cada parte · editor: equipo con un clic, unir, partir, ajustar inicio y fin · descarga en MP4 sin recodificar y enlace para jugadores · medida con 2-3 partidos reales | 1, 2, 4, 6 |
+| **1. MVP** | ✅ análisis en el navegador (silbato + movimiento + calmas largas) y límites de cada parte · ✅ editor: equipo con un clic, unir, partir, ajustar inicio y fin, quitar, deshacer · subida reanudable a R2 y partidos en D1, con Cloudflare Access (el análisis correrá mientras sube) · descarga en MP4 sin recodificar y enlace para jugadores · medida con 2-3 partidos reales | 1, 2, 4, 6 |
 | **2. Equipos y partes** | Colores de cada equipo, detector en el navegador, posesión por fragmento (sin usar la mitad del campo), partir por posesión, filtros por equipo y parte | 3, 5 |
 | **3. Mejor detección** | Balón fuera con cámara fija calibrada, posesión por contacto, detector afinado para el balón de sala | 2, 3 |
 | **4. Selección y ritmo** | Estrellas y vídeo de la selección (unido sin recodificar), gráfico del ritmo del partido | 7, 8 |
@@ -124,10 +133,13 @@ producto.
 ## Estructura
 
 ```
-src/cliente/     Navegador: formulario de subida, estilos (DOM a pelo, sin framework)
+src/cliente/     Navegador (DOM a pelo, sin framework):
+  subida/          formulario, lectura de metadatos y validación
+  analisis/        worker que lee audio e imagen, y la sección «Jugadas»
+  editor/          editor de fragmentos: operaciones puras, historial, vídeo, línea y lista
 src/servidor/    Worker: enrutador mínimo y API
 src/comun/       Tipos y funciones puras que usan los dos lados
-src/nucleo/      Detección del balón parado (fase 1): TypeScript puro, sin DOM
+src/nucleo/      Detección del balón parado: TypeScript puro, sin DOM (parte copiada de futsal-tracking)
 tests/           Pruebas unitarias (Vitest) y vídeos de prueba
 e2e/             Pruebas de la página (Playwright)
 tools/           Scripts que no forman parte de la aplicación
