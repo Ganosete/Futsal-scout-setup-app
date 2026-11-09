@@ -1,0 +1,13 @@
+// Un solo Worker sirve la pagina (estaticos) y, mas adelante, la API.
+// El directorio de los estaticos no se pone aqui: lo fija @cloudflare/vite-plugin
+// al compilar.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "futsal-scout",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    // Cualquier ruta que no sea un fichero devuelve index.html: la navegacion
+    // la lleva la propia pagina.
+    "not_found_handling": "single-page-application"
+  }
+}

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars*
+.DS_Store
+
+# Lo genera `npm run tipos:worker` a partir de wrangler.jsonc.
+src/servidor/worker-configuration.d.ts
+
+# Salidas de Playwright.
+test-results/
+playwright-report/
