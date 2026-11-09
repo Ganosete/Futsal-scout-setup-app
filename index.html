@@ -103,6 +103,20 @@
             <video id="video-editor" class="video-editor" controls playsinline preload="metadata"></video>
             <!-- Con el ratón; con el teclado se llega a lo mismo con los atajos y la lista. -->
             <div id="linea-analisis" class="linea" aria-hidden="true"></div>
+            <div id="partes-editor" class="partes-editor" aria-label="Partes del partido">
+              <div class="parte-fila">
+                <span class="parte-nombre">1.ª parte</span>
+                <span id="rango-parte-1" class="parte-rango"></span>
+                <button type="button" class="boton-mini" data-parte="1" data-borde="desde" aria-label="La 1.ª parte empieza aquí">Empieza aquí</button>
+                <button type="button" class="boton-mini" data-parte="1" data-borde="hasta" aria-label="La 1.ª parte acaba aquí">Acaba aquí</button>
+              </div>
+              <div class="parte-fila">
+                <span class="parte-nombre">2.ª parte</span>
+                <span id="rango-parte-2" class="parte-rango"></span>
+                <button type="button" class="boton-mini" data-parte="2" data-borde="desde" aria-label="La 2.ª parte empieza aquí">Empieza aquí</button>
+                <button type="button" class="boton-mini" data-parte="2" data-borde="hasta" aria-label="La 2.ª parte acaba aquí">Acaba aquí</button>
+              </div>
+            </div>
             <div id="barra-editor" class="barra-editor" role="toolbar" aria-label="Revisar los fragmentos">
               <div class="grupo">
                 <button type="button" class="boton-mini" data-accion="anterior" title="Fragmento anterior (↑)">↑ Anterior</button>

@@ -112,6 +112,32 @@ test('ver todo seguido se salta el balón parado', async ({ page }) => {
   await expect(page.locator('#lista-fragmentos .fragmento').nth(1)).toHaveAttribute('aria-current', 'true');
 });
 
+test('marcar el descanso y el inicio del partido', async ({ page }) => {
+  // No se encontró descanso: todo es una parte. La 2.ª empieza a los 40 s...
+  await buscar(page, 40);
+  await page.getByRole('button', { name: 'La 2.ª parte empieza aquí' }).click();
+  expect((await filas(page)).map((f) => [f.desde, f.hasta])).toEqual([
+    [0, 19.98],
+    [30, 40],
+    [40, 60],
+  ]);
+  await expect(page.locator('#lista-fragmentos .fragmento').nth(2)).toContainText('2.ª parte');
+  // ...y la 1.ª acaba a los 35 s: lo de 35 a 40 es el descanso.
+  await buscar(page, 35);
+  await page.getByRole('button', { name: 'La 1.ª parte acaba aquí' }).click();
+  expect((await filas(page)).map((f) => [f.desde, f.hasta])).toEqual([
+    [0, 19.98],
+    [30, 35],
+    [40, 60],
+  ]);
+  await expect(page.locator('#partes-analisis')).toHaveText('Descanso: de 0:35 a 0:40.');
+  // El partido empieza a los 5 s: lo de antes es calentamiento.
+  await buscar(page, 5);
+  await page.getByRole('button', { name: 'La 1.ª parte empieza aquí' }).click();
+  expect((await filas(page))[0]).toMatchObject({ desde: 5, hasta: 19.98 });
+  await expect(page.locator('#rango-parte-1')).toHaveText('0:05 – 0:35');
+});
+
 test('un clic en la línea lleva el vídeo ahí y elige el fragmento', async ({ page }) => {
   const linea = page.locator('#linea-analisis');
   // click() con posición lleva antes la línea a la vista; queda por debajo del vídeo.

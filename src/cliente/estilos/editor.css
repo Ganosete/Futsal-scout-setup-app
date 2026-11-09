@@ -69,6 +69,31 @@
   pointer-events: none;
 }
 
+/* Las partes del partido, con sus bordes a mano. */
+.partes-editor {
+  display: grid;
+  gap: 6px;
+}
+
+.parte-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.parte-nombre {
+  min-width: 5.5em;
+  font-weight: 650;
+}
+
+.parte-rango {
+  flex: 1 1 10em;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
 /* La barra de acciones: grupos que se parten en varias lineas en el movil. */
 .barra-editor {
   display: flex;

@@ -1,13 +1,16 @@
 import { formatearDuracion } from '../../comun/formato';
 import type { ResultadoAnalisis } from '../../nucleo/analizar';
+import type { Intervalo } from '../../nucleo/balonParado/tramos';
 import type { Equipo } from '../../nucleo/fragmentos';
 import { textoEquipos, textoPartes, textoResumen, type Nombres } from '../analisis/resumen';
 import { el } from '../dom';
 import { accionDeTecla, esAccion, teclaAjena, type Accion } from './atajos';
 import { Historial } from './historial';
+import { aplicarPartes, moverBordeParte, type Borde } from './limitesPartes';
 import { LineaTiempo } from './lineaTiempo';
 import { ListaFragmentos } from './listaFragmentos';
 import { fragmentoEn, moverFin, moverInicio, partir, ponerEquipo, quitar, unirConSiguiente, type EstadoEditor } from './operaciones';
+import { PanelPartes } from './panelPartes';
 import { Reproductor } from './reproductor';
 
 /**
@@ -46,6 +49,8 @@ export function crearEditor(nombres: () => Nombres): Editor {
 
   let historial: Historial<EstadoEditor> | null = null;
   let seleccionado: string | null = null;
+  /** El balon parado del analisis: hace falta para calcular fragmentos al alargar una parte. */
+  let tramos: readonly Intervalo[] = [];
 
   const actual = (): EstadoEditor | null => historial?.estado ?? null;
   const numero = (e: EstadoEditor, id: string): number => e.fragmentos.findIndex((f) => f.id === id) + 1;
@@ -68,6 +73,22 @@ export function crearEditor(nombres: () => Nombres): Editor {
     },
     nombres,
   });
+  const panelPartes = new PanelPartes(el('partes-editor'), (numero, borde) => moverParte(numero, borde));
+
+  function moverParte(numero: 1 | 2, borde: Borde): void {
+    const e = actual();
+    if (!e) return;
+    const nuevas = moverBordeParte(e.partes, e.duracion, numero, borde, reproductor.tiempo);
+    const nombre = numero === 1 ? '1.ª parte' : '2.ª parte';
+    aplicar(
+      nuevas && aplicarPartes(e, nuevas, tramos, () => crypto.randomUUID()),
+      (nuevo) => {
+        const p = nuevo.partes.find((x) => x.numero === numero);
+        return p ? `${nombre}: ${formatearDuracion(p.desde)} – ${formatearDuracion(p.hasta)}.` : '';
+      },
+      `La ${nombre} ya ${borde === 'desde' ? 'empieza' : 'acaba'} ahí, o se cruzaría con la otra parte.`,
+    );
+  }
 
   function pintar(): void {
     const e = actual();
@@ -76,6 +97,7 @@ export function crearEditor(nombres: () => Nombres): Editor {
     resumen.textContent = textoResumen(e.fragmentos, e.duracion);
     equipos.textContent = textoEquipos(e.fragmentos, nombres());
     partes.textContent = textoPartes(e.partes);
+    panelPartes.pintar(e.partes);
     linea.pintar(e, seleccionado);
     linea.moverCabezal(reproductor.tiempo);
     lista.pintar(e.fragmentos, seleccionado);
@@ -213,6 +235,7 @@ export function crearEditor(nombres: () => Nombres): Editor {
   return {
     abrir: (d) => {
       historial = new Historial<EstadoEditor>({ duracion: d.duracion, partes: d.resultado.partes, fragmentos: d.resultado.fragmentos, correcciones: [] });
+      tramos = d.resultado.tramos;
       seleccionado = d.resultado.fragmentos[0]?.id ?? null;
       reproductor.cargar(d.fichero);
       contenedor.hidden = false;
