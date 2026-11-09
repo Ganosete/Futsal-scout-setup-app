@@ -25,6 +25,11 @@
   --aviso: #8a5a00;
   --aviso-fondo: #fff8e1;
 
+  /* Quien ataca en cada fragmento. Mas adelante, los colores de las camisetas. */
+  --equipo-local: #d9480f;
+  --equipo-visitante: #1864ab;
+  --sin-equipo: #adb5bd;
+
   --radio: 10px;
   --radio-grande: 18px;
   --sombra: 0 1px 2px rgb(16 24 40 / 0.06), 0 10px 30px rgb(16 24 40 / 0.07);
@@ -51,6 +56,10 @@
     --error-fondo: #2c1515;
     --aviso: #f5c451;
     --aviso-fondo: #2b2410;
+
+    --equipo-local: #ff7a3d;
+    --equipo-visitante: #4dabf7;
+    --sin-equipo: #5c6675;
 
     --sombra: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 30px rgb(0 0 0 / 0.35);
   }

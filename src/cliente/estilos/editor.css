@@ -1,0 +1,219 @@
+/* --- Editor de fragmentos: video, linea de tiempo, barra y lista --- */
+
+.video-editor {
+  display: block;
+  width: 100%;
+  max-height: 60vh;
+  background: #000;
+  border-radius: var(--radio);
+}
+
+/* La linea del partido entero: fragmentos del color de quien ataca. */
+.linea {
+  position: relative;
+  height: 28px;
+  overflow: hidden;
+  background: var(--superficie-2);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.linea-capa {
+  position: absolute;
+  inset: 0;
+}
+
+.linea-tramo,
+.linea-fuera {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+.linea-tramo {
+  top: 4px;
+  bottom: 4px;
+  background: var(--sin-equipo);
+}
+
+.linea-tramo.equipo-local {
+  background: var(--equipo-local);
+}
+
+.linea-tramo.equipo-visitante {
+  background: var(--equipo-visitante);
+}
+
+.linea-tramo.seleccionado {
+  top: 0;
+  bottom: 0;
+  outline: 2px solid var(--texto);
+  outline-offset: -2px;
+}
+
+/* Lo que no es partido (calentamiento, descanso), rayado para que no se confunda con balon parado. */
+.linea-fuera {
+  background: repeating-linear-gradient(135deg, transparent 0 4px, var(--borde) 4px 6px);
+}
+
+.linea-cabezal {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--texto);
+  pointer-events: none;
+}
+
+/* La barra de acciones: grupos que se parten en varias lineas en el movil. */
+.barra-editor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.grupo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.boton-mini {
+  min-height: 34px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.boton-mini:hover:not(:disabled) {
+  border-color: var(--acento);
+}
+
+.boton-mini:focus-visible {
+  outline: 3px solid var(--anillo-foco);
+  outline-offset: 1px;
+}
+
+.boton-mini:disabled {
+  color: var(--texto-suave);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.boton-mini.equipo-local[aria-pressed='true'] {
+  color: #fff;
+  background: var(--equipo-local);
+  border-color: var(--equipo-local);
+}
+
+.boton-mini.equipo-visitante[aria-pressed='true'] {
+  color: #fff;
+  background: var(--equipo-visitante);
+  border-color: var(--equipo-visitante);
+}
+
+.estado-editor {
+  min-height: 1.5em;
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* La lista de fragmentos. */
+.fragmentos {
+  max-height: 360px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  list-style: none;
+}
+
+.fragmento {
+  display: grid;
+  grid-template-columns: 3ch 6.5em 1fr auto auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 12px;
+  font-variant-numeric: tabular-nums;
+  border-left: 4px solid var(--sin-equipo);
+  cursor: pointer;
+}
+
+.fragmento + .fragmento {
+  border-top: 1px solid var(--borde);
+}
+
+.fragmento.equipo-local {
+  border-left-color: var(--equipo-local);
+}
+
+.fragmento.equipo-visitante {
+  border-left-color: var(--equipo-visitante);
+}
+
+.fragmento.seleccionado {
+  background: var(--acento-suave);
+}
+
+.fragmento-numero,
+.fragmento-parte,
+.fragmento-duracion {
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.fragmento-rango {
+  font-weight: 600;
+}
+
+.chip-equipo {
+  width: 30px;
+  height: 30px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--texto-suave);
+  background: transparent;
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.chip-local[aria-pressed='true'] {
+  color: #fff;
+  background: var(--equipo-local);
+  border-color: var(--equipo-local);
+}
+
+.chip-visitante[aria-pressed='true'] {
+  color: #fff;
+  background: var(--equipo-visitante);
+  border-color: var(--equipo-visitante);
+}
+
+.atajos {
+  font-size: 0.8rem;
+}
+
+@media (max-width: 560px) {
+  .fragmento {
+    grid-template-columns: 3ch 1fr auto auto;
+  }
+
+  .fragmento-parte,
+  .fragmento-duracion {
+    display: none;
+  }
+}

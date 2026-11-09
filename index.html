@@ -98,9 +98,40 @@
           <p id="estado-analisis" class="estado-analisis" role="status" aria-live="polite"></p>
           <div id="resultado-analisis" class="resultado" hidden>
             <p id="resumen-analisis" class="resumen"></p>
+            <p id="equipos-analisis" class="nota"></p>
             <p id="partes-analisis" class="nota"></p>
+            <video id="video-editor" class="video-editor" controls playsinline preload="metadata"></video>
+            <!-- Con el ratón; con el teclado se llega a lo mismo con los atajos y la lista. -->
             <div id="linea-analisis" class="linea" aria-hidden="true"></div>
-            <ol id="lista-fragmentos" class="fragmentos"></ol>
+            <div id="barra-editor" class="barra-editor" role="toolbar" aria-label="Revisar los fragmentos">
+              <div class="grupo">
+                <button type="button" class="boton-mini" data-accion="anterior" title="Fragmento anterior (↑)">↑ Anterior</button>
+                <button type="button" class="boton-mini" data-accion="verFragmento" title="Ver el fragmento (Intro)">Ver fragmento</button>
+                <button type="button" class="boton-mini" data-accion="verTodo" title="Ver todos los fragmentos seguidos, sin el balón parado">Ver todo seguido</button>
+                <button type="button" class="boton-mini" data-accion="siguiente" title="Fragmento siguiente (↓)">Siguiente ↓</button>
+              </div>
+              <div class="grupo">
+                <button type="button" class="boton-mini equipo-local" data-accion="local" aria-pressed="false" title="Ataca el local (L)">Local</button>
+                <button type="button" class="boton-mini equipo-visitante" data-accion="visitante" aria-pressed="false" title="Ataca el visitante (V)">Visitante</button>
+              </div>
+              <div class="grupo">
+                <button type="button" class="boton-mini" data-accion="inicioAqui" title="El fragmento empieza donde está el vídeo (I)">Inicio aquí</button>
+                <button type="button" class="boton-mini" data-accion="finAqui" title="El fragmento acaba donde está el vídeo (F)">Fin aquí</button>
+                <button type="button" class="boton-mini" data-accion="partir" title="Partir el fragmento donde está el vídeo (P)">Partir aquí</button>
+                <button type="button" class="boton-mini" data-accion="unir" title="Unir con el fragmento siguiente (U)">Unir con el siguiente</button>
+                <button type="button" class="boton-mini" data-accion="quitar" title="No es juego: quitar el fragmento (Supr)">Quitar</button>
+              </div>
+              <div class="grupo">
+                <button type="button" class="boton-mini" data-accion="deshacer" title="Deshacer (Ctrl+Z)">Deshacer</button>
+                <button type="button" class="boton-mini" data-accion="rehacer" title="Rehacer (Ctrl+Mayús+Z)">Rehacer</button>
+              </div>
+            </div>
+            <p id="estado-editor" class="estado-editor" role="status" aria-live="polite"></p>
+            <ol id="lista-fragmentos" class="fragmentos" aria-label="Fragmentos de juego"></ol>
+            <p class="nota atajos">
+              Atajos: Espacio reproduce · ↑ ↓ cambian de fragmento · ← → mueven 2 s (con Mayús, 0,2 s) · L / V equipo ·
+              I / F inicio y fin · P parte · U une · Supr quita · Ctrl+Z deshace.
+            </p>
           </div>
         </section>
 

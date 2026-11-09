@@ -1,10 +1,12 @@
 import { el } from '../dom';
+import { crearEditor, type Editor } from '../editor/editor';
 import { analizarVideo, type AnalisisEnCurso } from './cliente';
-import { pintarResultado } from './vistaAnalisis';
+import type { Nombres } from './resumen';
 
 /**
  * La seccion «Jugadas»: buscar el balon parado en el video elegido, con su
- * progreso y la posibilidad de parar, y ensenar los fragmentos que salen.
+ * progreso y la posibilidad de parar, y abrir el editor con los fragmentos
+ * que salen.
  *
  * Por ahora se lanza a mano y sobre el fichero local; cuando llegue la subida
  * (1a) correra a la vez que ella.
@@ -13,12 +15,13 @@ import { pintarResultado } from './vistaAnalisis';
 export interface PanelAnalisis {
   /** El formulario avisa de cada video valido que se elige, o de que ya no hay ninguno. */
   videoElegido: (fichero: File | null) => void;
+  readonly editor: Editor;
 }
 
 const PORCENTAJE = new Intl.NumberFormat('es-ES', { style: 'percent', maximumFractionDigits: 0 });
 const SEGUNDOS = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
 
-export function iniciarPanelAnalisis(): PanelAnalisis {
+export function iniciarPanelAnalisis(nombres: () => Nombres): PanelAnalisis {
   const bloque = el<HTMLElement>('bloque-analisis');
   const botonAnalizar = el<HTMLButtonElement>('btn-analizar');
   const botonParar = el<HTMLButtonElement>('btn-parar-analisis');
@@ -26,13 +29,7 @@ export function iniciarPanelAnalisis(): PanelAnalisis {
   const barra = el<HTMLProgressElement>('barra-analisis');
   const porcentaje = el<HTMLSpanElement>('porcentaje-analisis');
   const estado = el<HTMLParagraphElement>('estado-analisis');
-  const resultado = {
-    contenedor: el<HTMLDivElement>('resultado-analisis'),
-    resumen: el<HTMLParagraphElement>('resumen-analisis'),
-    partes: el<HTMLParagraphElement>('partes-analisis'),
-    linea: el<HTMLDivElement>('linea-analisis'),
-    lista: el<HTMLOListElement>('lista-fragmentos'),
-  };
+  const editor = crearEditor(nombres);
 
   let fichero: File | null = null;
   let enCurso: AnalisisEnCurso | null = null;
@@ -56,11 +53,12 @@ export function iniciarPanelAnalisis(): PanelAnalisis {
 
   async function analizar(): Promise<void> {
     if (!fichero || enCurso) return;
-    resultado.contenedor.hidden = true;
+    const video = fichero;
+    editor.cerrar();
     avance(0);
     enMarcha(true);
     estado.textContent = 'Buscando el balón parado…';
-    const actual = analizarVideo(fichero, avance);
+    const actual = analizarVideo(video, avance);
     enCurso = actual;
     try {
       const hecho = await actual.resultado;
@@ -69,7 +67,7 @@ export function iniciarPanelAnalisis(): PanelAnalisis {
         estado.textContent = 'Análisis parado.';
         return;
       }
-      pintarResultado(resultado, hecho.resultado, hecho.senales.duracion);
+      editor.abrir({ fichero: video, resultado: hecho.resultado, duracion: hecho.senales.duracion });
       const avisos = hecho.avisos.length > 0 ? ` ${hecho.avisos.join(' ')}` : '';
       estado.textContent = `Hecho en ${SEGUNDOS.format(hecho.segundosPared)} s.${avisos}`;
     } catch (e) {
@@ -91,10 +89,11 @@ export function iniciarPanelAnalisis(): PanelAnalisis {
   return {
     videoElegido: (f) => {
       parar();
+      editor.cerrar();
       fichero = f;
       bloque.hidden = !f;
-      resultado.contenedor.hidden = true;
       estado.textContent = '';
     },
+    editor,
   };
 }

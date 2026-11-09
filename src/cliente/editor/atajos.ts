@@ -61,12 +61,26 @@ export function accionDeTecla(t: Tecla): Accion | null {
   return SIMPLES[letra] ?? null;
 }
 
+const TECLAS_DEL_VIDEO = new Set([' ', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']);
+
 /**
- * Cuando el atajo no es del editor: mientras se escribe en un campo, y con
- * Espacio o Intro sobre un boton, que ya los usa para pulsarse.
+ * Cuando el atajo no es del editor: mientras se escribe en un campo; con
+ * Espacio o Intro sobre un boton, que ya los usa para pulsarse; y con el foco
+ * en el <video>, que ya usa el Espacio y las flechas (si no, actuarian dos veces).
  */
 export function teclaAjena(objetivo: EventTarget | null, key: string): boolean {
   if (typeof HTMLElement === 'undefined' || !(objetivo instanceof HTMLElement)) return false;
   if (objetivo.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(objetivo.tagName)) return true;
-  return objetivo.tagName === 'BUTTON' && (key === ' ' || key === 'Enter');
+  if (objetivo.tagName === 'BUTTON') return key === ' ' || key === 'Enter';
+  return objetivo.tagName === 'VIDEO' && TECLAS_DEL_VIDEO.has(key);
+}
+
+const ACCIONES = new Set<string>([
+  'reproducir', 'verFragmento', 'anterior', 'siguiente', 'atras', 'adelante', 'atrasFino', 'adelanteFino',
+  'local', 'visitante', 'unir', 'partir', 'inicioAqui', 'finAqui', 'quitar', 'deshacer', 'rehacer',
+]);
+
+/** Para leer la accion del data-accion de un boton sin fiarse del texto. */
+export function esAccion(s: string | undefined): s is Accion {
+  return s !== undefined && ACCIONES.has(s);
 }
