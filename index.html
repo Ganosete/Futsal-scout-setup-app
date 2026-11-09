@@ -81,6 +81,29 @@
           </div>
         </fieldset>
 
+        <section id="bloque-analisis" class="bloque" aria-labelledby="titulo-analisis" hidden>
+          <h2 id="titulo-analisis" class="titulo-bloque"><span class="paso">3</span> Jugadas</h2>
+          <p class="nota">
+            Busca en el vídeo los ratos de balón parado y lo corta en fragmentos de juego. Se hace en tu navegador: con
+            un partido entero tarda unos minutos.
+          </p>
+          <div class="analisis-controles">
+            <button id="btn-analizar" type="button" class="boton boton-secundario">Buscar las jugadas</button>
+            <button id="btn-parar-analisis" type="button" class="boton boton-secundario" hidden>Parar</button>
+            <div id="progreso-analisis" class="progreso" hidden>
+              <progress id="barra-analisis" max="1" value="0" aria-label="Progreso del análisis"></progress>
+              <span id="porcentaje-analisis" class="porcentaje">0 %</span>
+            </div>
+          </div>
+          <p id="estado-analisis" class="estado-analisis" role="status" aria-live="polite"></p>
+          <div id="resultado-analisis" class="resultado" hidden>
+            <p id="resumen-analisis" class="resumen"></p>
+            <p id="partes-analisis" class="nota"></p>
+            <div id="linea-analisis" class="linea" aria-hidden="true"></div>
+            <ol id="lista-fragmentos" class="fragmentos"></ol>
+          </div>
+        </section>
+
         <div class="acciones">
           <button id="btn-subir" type="submit" class="boton boton-principal" disabled>Subir y analizar</button>
           <p id="estado-subida" class="estado" role="status" aria-live="polite"></p>

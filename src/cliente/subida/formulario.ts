@@ -30,7 +30,12 @@ function textoEstado(video: EstadoVideo, videoValido: boolean, listo: boolean): 
   return 'Todo listo. En cuanto llegue la subida, este botón la empezará.';
 }
 
-export function iniciarFormulario(): void {
+export interface OpcionesFormulario {
+  /** Cada video que se puede usar, o null en cuanto se elige otro (o uno que no vale). */
+  alCambiarVideo?: (fichero: File | null) => void;
+}
+
+export function iniciarFormulario(opciones: OpcionesFormulario = {}): void {
   const formulario = el<HTMLFormElement>('form-subida');
   const bloqueVideo = el<HTMLFieldSetElement>('bloque-video');
   const entrada = el<HTMLInputElement>('entrada-video');
@@ -79,6 +84,7 @@ export function iniciarFormulario(): void {
 
   async function elegir(fichero: File): Promise<void> {
     const mio = ++turno;
+    opciones.alCambiarVideo?.(null);
     zona.hidden = true;
     ficha.hidden = false;
     nombre.textContent = fichero.name;
@@ -111,6 +117,7 @@ export function iniciarFormulario(): void {
     video = { tipo: 'comprobado', fichero, problemas: ordenar([...previos, ...encontrados]) };
     pintarProblemas(problemas, video.problemas);
     pintar();
+    if (!hayErrores(video.problemas)) opciones.alCambiarVideo?.(fichero);
   }
 
   entrada.addEventListener('change', () => {

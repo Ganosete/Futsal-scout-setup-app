@@ -1,0 +1,115 @@
+/* --- Seccion «Jugadas»: analisis y fragmentos --- */
+
+/* Mismo aspecto que la leyenda de los fieldset de arriba. */
+.titulo-bloque {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.analisis-controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.progreso {
+  display: flex;
+  flex: 1 1 200px;
+  align-items: center;
+  gap: 10px;
+}
+
+.progreso progress {
+  flex: 1;
+  height: 8px;
+  accent-color: var(--acento);
+}
+
+.porcentaje {
+  min-width: 3.5em;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.estado-analisis {
+  margin: 10px 0 0;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.estado-analisis:empty {
+  display: none;
+}
+
+.resultado {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.resumen {
+  margin: 0;
+  font-weight: 650;
+}
+
+/* La linea de tiempo del video entero, con los fragmentos de juego encima. */
+.linea {
+  position: relative;
+  height: 14px;
+  overflow: hidden;
+  background: var(--borde);
+  border-radius: 999px;
+}
+
+.linea-tramo {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--acento);
+}
+
+.linea-parte-2 {
+  opacity: 0.7;
+}
+
+.fragmentos {
+  max-height: 320px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  list-style: none;
+}
+
+.fragmento {
+  display: grid;
+  grid-template-columns: 3ch 6.5em 1fr auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 8px 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fragmento + .fragmento {
+  border-top: 1px solid var(--borde);
+}
+
+.fragmento-numero,
+.fragmento-parte,
+.fragmento-duracion {
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.fragmento-rango {
+  font-weight: 600;
+}
