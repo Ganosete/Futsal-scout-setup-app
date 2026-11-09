@@ -56,4 +56,30 @@ ffmpeg "${COMUN[@]}" -display_rotation 90 -i "$DESTINO/partido_corto.mp4" \
 ffmpeg "${COMUN[@]}" -f lavfi -i "$(imagen 320x180 1)" \
   -c:v prores_ks -profile:v 0 -an "${SALIDA[@]}" "$DESTINO/prores.mov"
 
+# 7. Un minuto para el analisis: juego hasta 20 s, silbato de 20,0 a 20,5 s, la
+# imagen quieta hasta 30 s (balon parado) y juego otra vez hasta el final. Lo
+# esperado: un tramo parado de 20 a 30 s y dos fragmentos, [0, 20) y [30, 60).
+# testsrc en vez de testsrc2: tambien se mueve y pesa la cuarta parte.
+# Sin cortes de escena forzados: la imagen quieta no debe meter fotogramas clave.
+IMAGEN_ANALISIS="testsrc=size=192x108:rate=25:duration=60"
+SILBATO_ANALISIS="aevalsrc=0.5*sin(2*PI*4000*t)*between(t\,20\,20.5):s=48000:d=60"
+# Audio a 22 kHz: el silbato (4 kHz) se sigue oyendo entero.
+AAC_ANALISIS=(-c:a aac -b:a 24k -ar 22050)
+# freezeframes congela con un fotograma de su segunda entrada: aqui, el mismo video.
+QUIETA=(-filter_complex "[0:v]split[a][b];[a][b]freezeframes=first=500:last=749:replace=499[v]" -map "[v]" -map 1:a)
+ffmpeg "${COMUN[@]}" -f lavfi -i "$IMAGEN_ANALISIS" -f lavfi -i "$SILBATO_ANALISIS" "${QUIETA[@]}" \
+  -c:v libx264 -preset veryfast -crf 42 -pix_fmt yuv420p -g 25 -sc_threshold 0 "${AAC_ANALISIS[@]}" \
+  -shortest -movflags +faststart "${SALIDA[@]}" "$DESTINO/analisis.mp4"
+
+# 8. El mismo minuto recortado desde 5,5 s sin recodificar, con fotogramas clave
+# cada 4 s: el corte empieza en el clave de 4 s y una lista de edicion manda
+# saltarse 1,5 s. Es el caso que en futsal-tracking desfasaba lo decodificado
+# respecto a lo reproducido. En el tiempo del <video>, el silbato cae en 14,5 s.
+TEMPORAL="$(mktemp -d)"
+ffmpeg "${COMUN[@]}" -f lavfi -i "$IMAGEN_ANALISIS" -f lavfi -i "$SILBATO_ANALISIS" "${QUIETA[@]}" \
+  -c:v libx264 -preset veryfast -crf 42 -pix_fmt yuv420p -g 100 -keyint_min 100 -sc_threshold 0 "${AAC_ANALISIS[@]}" \
+  -shortest "${SALIDA[@]}" "$TEMPORAL/gop4.mp4"
+ffmpeg "${COMUN[@]}" -ss 5.5 -i "$TEMPORAL/gop4.mp4" -c copy -movflags +faststart "${SALIDA[@]}" "$DESTINO/recortado.mp4"
+rm -rf "$TEMPORAL"
+
 ls -l "$DESTINO"
