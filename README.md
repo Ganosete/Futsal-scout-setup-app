@@ -10,20 +10,22 @@ compartir los clips con tus jugadores.
 
 ## Estado
 
-**Fase 1 (MVP) en curso.** Todo lo que hay funciona en el navegador, sin subir nada todavía:
+**Fase 1 (MVP) en curso.** Lo que hay:
 
 1. **Nuevo partido:** eliges el vídeo y se comprueba al momento (duración, imagen, sonido,
    tamaño, y si hay algo que impida usarlo o que vaya a salir peor).
-2. **Buscar las jugadas:** el navegador escucha el silbato y mide el movimiento de la imagen, y
-   corta el partido en fragmentos de juego. Propone el descanso si lo encuentra.
+2. **Subir y analizar:** el vídeo se sube por partes mientras el navegador escucha el silbato y
+   mide el movimiento de la imagen para cortar el partido en fragmentos de juego. Propone el
+   descanso si lo encuentra. Si la subida se corta, al elegir el mismo vídeo sigue donde se quedó.
 3. **Revisar:** un editor con el vídeo, la línea de tiempo y la lista de fragmentos. Equipo con
    un clic, unir, partir, ajustar inicio y fin, quitar, marcar las partes, y deshacer, todo con
-   atajos de teclado.
-4. **Descargar en MP4** cualquier fragmento, sin recodificar y con un nombre que dice partido,
+   atajos de teclado. Cada cambio se guarda solo.
+4. **Mis partidos:** lo subido, para volver a abrirlo (el vídeo se ve desde el servidor) o
+   borrarlo.
+5. **Descargar en MP4** cualquier fragmento, sin recodificar y con un nombre que dice partido,
    fecha, jugada y minuto.
 
-Falta la subida a R2 (las correcciones se pierden al recargar la página) y el enlace para los
-jugadores.
+Falta el enlace para los jugadores y medir el detector con partidos reales.
 
 ## Qué hará
 
@@ -43,13 +45,13 @@ jugadores.
 ```
 Navegador del entrenador
   ├─ elige el MP4 → metadatos al instante (Mediabunny, sin subir nada)
-  ├─ lo sube a R2 por partes, reanudable                         (fase 1)
+  ├─ lo sube a R2 en partes de 50 MiB, tres a la vez, reanudable
   ├─ a la vez lo analiza en un worker: silbato en el audio y
-  │  movimiento de la imagen → tramos de balón parado            (fase 1)
-  ├─ editor: corrige, une, parte y ajusta los fragmentos         (fase 1)
-  └─ descarga en MP4 sin recodificar, leyendo de R2 solo el clip (fase 1)
-Worker de Cloudflare: la página y la API      R2: vídeos (UE)   D1: datos
-Jugadores: un enlace con los clips, sin cuenta                   (fase 1)
+  │  movimiento de la imagen → tramos de balón parado
+  ├─ editor: corrige, une, parte y ajusta; cada cambio se guarda solo
+  └─ descarga en MP4 sin recodificar, leyendo de R2 solo el clip
+Worker de Cloudflare: la página y la API   R2 (UE): vídeos y jugadas   D1: partidos
+Jugadores: un enlace con los clips, sin cuenta                    (pendiente)
 ```
 
 - **El análisis corre en el navegador** mientras se sube el vídeo, que ya está ahí: un Worker no
@@ -61,6 +63,14 @@ Jugadores: un enlace con los clips, sin cuenta                   (fase 1)
   índice. El clip empieza justo donde empieza el fragmento: se copia desde el fotograma clave
   anterior y una lista de edición le dice al reproductor que se salte ese trozo. Al final puede
   llevar uno o dos fotogramas de más.
+- **Dónde va cada cosa.** D1 lleva la lista de partidos y lo que hace falta para reanudar una
+  subida. En R2 van el vídeo, las jugadas de cada partido (partes, fragmentos y cada corrección,
+  en un JSON) y las señales del análisis. Las jugadas no van en D1 porque con muchas correcciones
+  pueden pasar de los 2 MB que admite una fila; las señales, en bruto, sirven para recalcular los
+  fragmentos con otros umbrales sin volver a leer el vídeo.
+- **Quién entra.** La web va detrás de Cloudflare Access (código por email) y el Worker verifica
+  el JWT que manda Access en cada petición. Cada entrenador ve solo sus partidos. Con dos
+  pestañas abiertas, la que se ha quedado atrás no puede pisar lo corregido en la otra.
 - La detección del balón parado parte de la de
   [futsal-tracking](https://github.com/Ganosete/futsal-tracking) (ver más abajo).
 
@@ -70,45 +80,76 @@ Hace falta Node 22.
 
 ```bash
 npm install
+npm run bd:local   # crea las tablas en la base de datos local (.wrangler/state)
 npm run dev        # http://localhost:5173, con el Worker en workerd
 ```
+
+En local no hay Cloudflare Access: entras como «entrenador@localhost», y D1 y R2 son locales.
 
 | Comando | Qué hace |
 |---|---|
 | `npm run dev` | Servidor de desarrollo: la página y el Worker juntos. |
-| `npm test` | Pruebas unitarias (Vitest, en Node). |
+| `npm test` | Pruebas unitarias (Vitest): la lógica en Node y la API dentro de workerd, con D1 y R2 locales. |
 | `npm run test:e2e` | Pruebas de la página (Playwright) contra la compilación de producción. La primera vez: `npx playwright install chromium`. |
 | `npm run typecheck` | Genera los tipos del Worker y comprueba los del cliente, el Worker y las pruebas. |
 | `npm run build` | Comprueba tipos y compila en `dist/`. |
 | `npm run preview` | Sirve `dist/` con el Worker en workerd, como en producción. |
-| `npm run deploy` | Compila y publica con wrangler (hace falta `npx wrangler login`). |
+| `npm run bd:local` | Aplica las migraciones de `migrations/` a la base de datos local. |
+| `npm run bd:remota` | Las aplica a la de producción. |
+| `npm run deploy` | Compila, migra la base de datos y publica con wrangler (hace falta `npx wrangler login`). |
 | `npm run videos:prueba` | Regenera los vídeos de prueba de `tests/fixtures/` (hace falta ffmpeg). |
 
 ## Desplegar en Cloudflare
 
 Un solo Worker sirve la página (estáticos) y la API. **`main` es producción.**
 
-Con **Workers Builds**, conectado al repositorio, cada push se despliega solo:
+**1. R2.** Actívalo en el panel (*R2 Object Storage*) y crea el bucket en la jurisdicción de la
+UE (son vídeos de jugadores, a menudo menores). Sin el bucket, el despliegue falla.
+
+```bash
+npx wrangler r2 bucket create futsal-scout-videos --jurisdiction eu
+```
+
+**2. D1.** La base de datos `futsal-scout` ya existe y su id está en `wrangler.jsonc`. Sus tablas
+las crea `npm run bd:remota`, que va en el comando de despliegue.
+
+**3. Workers Builds**, conectado al repositorio, despliega cada push:
 
 1. En el panel de Cloudflare: *Workers & Pages* → *Create* → *Import a repository* y elige este
    repositorio.
 2. Nombre del Worker: `futsal-scout` (tiene que coincidir con `name` en `wrangler.jsonc`).
-3. *Build command*: `npm run build`. *Deploy command*: `npx wrangler deploy`. Directorio raíz: `/`.
+3. *Build command*: `npm run build`. *Deploy command*: `npm run bd:remota && npx wrangler deploy`.
+   Directorio raíz: `/`.
 4. Rama de producción: `main`. Activa los *builds* de las demás ramas: cada una publica una
-   versión de vista previa con su propia URL, sin tocar producción.
+   versión de vista previa con su propia URL. Las vistas previas usan **la misma D1 y el mismo
+   R2 que producción**: su comando de despliegue no debe migrar nada.
 
-No hace falta ninguna variable: la versión de Node sale de `.node-version`. `/api/salud` dice qué
-commit está publicado.
+No hace falta ninguna variable de compilación: la versión de Node sale de `.node-version`.
+`/api/salud` dice qué commit está publicado.
 
-**Antes de la fase 1** habrá que crear el bucket de vídeos (en la UE) y la base de datos, y
-proteger la web con Cloudflare Access. Los comandos irán aquí cuando lleguen.
+**4. Cloudflare Access**, después del primer despliegue. Hasta entonces la API responde 503 fuera
+de localhost: la página busca las jugadas, pero no sube ni guarda nada.
+
+1. *Workers & Pages* → `futsal-scout` → *Settings* → *Domains & Routes*: en `workers.dev` y en
+   *Preview URLs*, *Enable Cloudflare Access*. En *Manage Cloudflare Access*, deja solo los
+   emails que pueden entrar.
+2. Copia en `vars` de `wrangler.jsonc` el dominio del equipo (`ACCESS_EQUIPO`:
+   `<equipo>.cloudflareaccess.com`) y la etiqueta AUD de cada aplicación (`ACCESS_AUD`, separadas
+   por comas: `workers.dev` y las vistas previas son aplicaciones distintas). Está en *Zero Trust*
+   → *Access controls* → *Applications* → *Edit* → *Additional settings* → *Application Audience
+   (AUD) Tag*. No son secretos.
+3. Haz push.
+
+**Límites del plan gratuito de Workers:** cuerpos de hasta 100 MB (las partes de la subida son de
+50 MiB), 100.000 peticiones al día (un partido de 4 GB son unas 80) y 10 ms de CPU por petición,
+que no alcanzan para guardar las jugadas de un partido muy corregido; el plan de pago los quita.
 
 ## Hoja de ruta
 
 | Fase | Contenido | Puntos |
 |---|---|---|
 | **0. Base** ✅ | Repositorio, estructura, TypeScript, Vitest, Playwright, CI, despliegue y formulario de subida que valida el vídeo en el navegador | — |
-| **1. MVP** | ✅ análisis en el navegador (silbato + movimiento + calmas largas) y límites de cada parte · ✅ editor: equipo con un clic, unir, partir, ajustar inicio y fin, quitar, deshacer · ✅ descarga en MP4 sin recodificar · subida reanudable a R2 y partidos en D1, con Cloudflare Access (el análisis correrá mientras sube) · enlace para jugadores · medida con 2-3 partidos reales | 1, 2, 4, 6 |
+| **1. MVP** | ✅ análisis en el navegador (silbato + movimiento + calmas largas) y límites de cada parte · ✅ editor: equipo con un clic, unir, partir, ajustar inicio y fin, quitar, deshacer · ✅ descarga en MP4 sin recodificar · ✅ subida reanudable a R2 mientras se analiza, partidos en D1, Cloudflare Access, «Mis partidos» y guardado automático · enlace para jugadores · medida con 2-3 partidos reales | 1, 2, 4, 6 |
 | **2. Equipos y partes** | Colores de cada equipo, detector en el navegador, posesión por fragmento (sin usar la mitad del campo), partir por posesión, filtros por equipo y parte | 3, 5 |
 | **3. Mejor detección** | Balón fuera con cámara fija calibrada, posesión por contacto, detector afinado para el balón de sala | 2, 3 |
 | **4. Selección y ritmo** | Estrellas y vídeo de la selección (unido sin recodificar), gráfico del ritmo del partido | 7, 8 |
@@ -126,8 +167,8 @@ tecla. Cada corrección se guarda para medir el detector con partidos reales y a
 [futsal-tracking](https://github.com/Ganosete/futsal-tracking) analiza partidos en el navegador
 (seguimiento, calibración, eventos). De ahí se **copian**, sin tocar aquel repositorio, los
 módulos de balón parado de su rama `solo-eventos` (`src/balonParado/`: silbato, movimiento,
-tramos y fusión de señales) y sus pruebas, y más adelante el detector y la clasificación por color
-de camiseta. Cada fichero copiado lleva en la cabecera de dónde viene y qué se ha cambiado.
+tramos y fusión de señales) y la huella de un fichero de su `main` (`src/store/huella.ts`), con sus
+pruebas, y más adelante el detector y la clasificación por color de camiseta. Cada fichero copiado lleva en la cabecera de dónde viene y qué se ha cambiado.
 
 No se copian su lector de vídeo (lee el MP4 de principio a fin y no vale para partidos de varios
 gigas con el índice al final), su exportación de vídeo (graba en tiempo real con `MediaRecorder`)
@@ -138,14 +179,19 @@ producto.
 
 ```
 src/cliente/     Navegador (DOM a pelo, sin framework):
-  subida/          formulario, lectura de metadatos y validación
-  analisis/        worker que lee audio e imagen, y la sección «Jugadas»
-  editor/          editor de fragmentos: operaciones puras, historial, vídeo, línea y lista
+  subida/          formulario, metadatos, validación, huella y subidor por partes
+  analisis/        worker que lee audio e imagen
+  partido/         «Subir y analizar», «Mis partidos» y la sección «Jugadas»
+  editor/          editor de fragmentos: operaciones puras, historial, guardado, vídeo, línea y lista
   descarga/        recorte a MP4 sin recodificar y nombre del fichero
+  api/             llamadas a la API
 src/servidor/    Worker: enrutador mínimo y API
+  acceso/          quién llama (JWT de Cloudflare Access) y de qué web viene
+  partidos/        partidos en D1, subida multiparte a R2, vídeo por rangos y jugadas
 src/comun/       Tipos y funciones puras que usan los dos lados
 src/nucleo/      Detección del balón parado: TypeScript puro, sin DOM (parte copiada de futsal-tracking)
-tests/           Pruebas unitarias (Vitest) y vídeos de prueba
+migrations/      Esquema de D1
+tests/           Pruebas unitarias (Vitest, en Node), del Worker (tests/servidor, en workerd) y vídeos
 e2e/             Pruebas de la página (Playwright)
 tools/           Scripts que no forman parte de la aplicación
 ```

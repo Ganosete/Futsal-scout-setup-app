@@ -16,7 +16,9 @@
     "test:e2e": "playwright test",
     "tipos:worker": "wrangler types --strict-vars=false src/servidor/worker-configuration.d.ts",
     "typecheck": "npm run tipos:worker && tsc -p tsconfig.nucleo.json && tsc -p tsconfig.cliente.json && tsc -p tsconfig.servidor.json && tsc -p tsconfig.pruebas-servidor.json && tsc -p tsconfig.json",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "npm run build && npm run bd:remota && wrangler deploy",
+    "bd:local": "wrangler d1 migrations apply BD --local",
+    "bd:remota": "wrangler d1 migrations apply BD --remote",
     "videos:prueba": "bash tools/crear_videos_prueba.sh"
   },
   "dependencies": {

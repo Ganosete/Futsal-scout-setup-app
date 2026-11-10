@@ -39,6 +39,13 @@ está en el README.
   rangos HTTP (R2).
 - **Lo pesado va en un worker del navegador**; nada bloquea la interfaz.
 - La API no se cachea (`no-store`) y sus errores no cuentan detalles internos.
+- **Cada entrenador ve solo lo suyo:** toda consulta de un partido lleva el dueño en el `WHERE`
+  (`servidor/partidos/almacen.ts`); el partido de otro es un 404, no un 403.
+- **Las jugadas de un partido van en un JSON en R2, no en D1:** con muchas correcciones pueden
+  pasar de los 2 MB por fila de D1. Cada guardado lleva `If-Match` con el ETag de R2, y un 412
+  (otra pestaña guardó antes) para el guardado automático en vez de pisar lo de la otra.
+- El formato de lo que se guarda y su validación están en `src/comun/`: el Worker lo comprueba al
+  guardar y el navegador al abrir, con la misma función.
 
 ## Código copiado de futsal-tracking
 
@@ -56,8 +63,14 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
 - **Vitest**, en `tests/`, en Node: lógica pura, con casos concretos y valores calculados a mano,
   no comparando contra la propia implementación.
 - Los vídeos de `tests/fixtures/` salen de `tools/crear_videos_prueba.sh`; no se editan a mano.
+- **Pruebas del Worker**, en `tests/servidor/`, dentro de workerd con D1 y R2 locales
+  (`@cloudflare/vitest-plugin`; el antiguo `vitest-pool-workers` está obsoleto). Llaman al Worker
+  entero (`exports.default.fetch`) y tienen su propio tsconfig (`tsconfig.pruebas-servidor.json`).
 - **Playwright**, en `e2e/`, contra `vite preview`: la compilación de producción con el Worker
-  real en workerd, en escritorio y en un móvil emulado.
+  real en workerd, en escritorio y en un móvil emulado. Usa sus propios D1 y R2 locales
+  (`.wrangler/e2e`), vacíos y migrados en cada arranque.
+- **Cada prueba entra con su propio dueño** (la cookie `futsal-scout-local`, que solo cuenta en
+  localhost): así van en paralelo sin ver los partidos de las demás.
 - **Nada de ajustar umbrales hasta que una prueba pase.** Si la medida real no llega, el que está
   mal es el umbral: se apunta el número medido y qué significa.
 
@@ -97,5 +110,20 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
   que lo esconde, y al final hay que copiar el fotograma B del que depende el último. Como no
   decodifica, se prueba en Node con los vídeos de verdad.
 - WebCodecs solo existe en un contexto seguro: `localhost` vale, `about:blank` no.
+- **`ctx.access` no llega a un Worker con estáticos** (el router de los estáticos no lo pasa): por
+  eso el JWT de Access se verifica a mano (`servidor/acceso/`). Sin `ACCESS_EQUIPO` y
+  `ACCESS_AUD`, la API responde 503 fuera de localhost; nunca queda abierta.
+- **R2 exige partes iguales salvo la última**, de al menos 5 MiB, y tira las subidas a medias a
+  los 7 días (por eso una de más de 6 días se empieza de nuevo). Miniflare lo comprueba igual.
+- En Miniflare, el cuerpo de un objeto de R2 llega sin tamaño conocido: el vídeo pone
+  `Content-Length` a mano, o la respuesta iría troceada.
+- `wrangler types --strict-vars=false`: sin eso, una var vacía de `wrangler.jsonc` tiene el tipo
+  literal `""`.
+- Un cambio en el esquema de D1 es una migración nueva en `migrations/`; las aplicadas no se
+  tocan. En local, `npm run bd:local`; en producción la aplica el comando de despliegue.
+- **Con una subida a medias o cambios sin guardar, la página pide confirmación al salir.** En
+  Playwright eso cuelga un `reload()`: antes hay que esperar a «Vídeo subido.» y a «Cambios
+  guardados.» (`esperarSubida`, `esperarGuardado`).
+- `Intl.NumberFormat` separa el número del `%` con un espacio duro (U+00A0).
 - En Playwright, un clic por coordenadas (`page.mouse`) en algo que queda por debajo del borde
   de la ventana cae fuera: usa `locator.click({ position })`, que desplaza antes.

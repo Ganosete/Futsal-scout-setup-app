@@ -27,7 +27,7 @@ export default defineConfig({
     // Cada vez desde cero: la base de datos vacia y con las migraciones de migrations/.
     command: [
       `rm -rf ${PERSISTENCIA}`,
-      `npx wrangler d1 migrations apply futsal-scout --local --persist-to ${PERSISTENCIA}`,
+      `npx wrangler d1 migrations apply BD --local --persist-to ${PERSISTENCIA}`,
       'npx vite build',
       `npx vite preview --port ${PUERTO} --strictPort`,
     ].join(' && '),
