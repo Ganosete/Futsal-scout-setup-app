@@ -18,7 +18,11 @@ import { verificarJwt, type ClaveJwk } from './jwt';
 export interface ConfigAcceso {
   /** El dominio del equipo de Access: `<equipo>.cloudflareaccess.com`. */
   ACCESS_EQUIPO: string;
-  /** La etiqueta AUD de la aplicacion de Access que protege la web. */
+  /**
+   * La etiqueta AUD de la aplicacion de Access que protege la web. Si hay
+   * varias (workers.dev y las vistas previas son aplicaciones distintas), van
+   * separadas por comas.
+   */
   ACCESS_AUD: string;
 }
 
@@ -95,13 +99,16 @@ export function crearIdentificador(opciones: OpcionesIdentificador = {}): Identi
   return async (peticion, config) => {
     if (HOSTS_LOCALES.has(new URL(peticion.url).hostname)) return { ok: true, email: emailLocal(peticion) };
     const equipo = dominioEquipo(config.ACCESS_EQUIPO ?? '');
-    const aud = (config.ACCESS_AUD ?? '').trim();
-    if (!equipo || !aud) return NO_CONFIGURADO;
+    const auds = (config.ACCESS_AUD ?? '')
+      .split(',')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0);
+    if (!equipo || auds.length === 0) return NO_CONFIGURADO;
     const token = peticion.headers.get('cf-access-jwt-assertion');
     if (!token) return SIN_SESION;
 
     const url = `https://${equipo}/cdn-cgi/access/certs`;
-    const esperado = { iss: `https://${equipo}`, aud, ahora: ahora() };
+    const esperado = { iss: `https://${equipo}`, aud: auds, ahora: ahora() };
     let v = await verificarJwt(token, await claves(url, false), esperado);
     // Una clave que no se conoce puede ser una rotacion reciente: se piden otra vez, una sola.
     if (!v.ok && v.claveDesconocida) v = await verificarJwt(token, await claves(url, true), esperado);

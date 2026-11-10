@@ -24,8 +24,8 @@ export interface CargaJwt {
 export interface Esperado {
   /** El emisor exacto: `https://<equipo>.cloudflareaccess.com`. */
   iss: string;
-  /** La etiqueta AUD de la aplicacion de Access. */
-  aud: string;
+  /** Las etiquetas AUD que se aceptan: basta con que el token traiga una. */
+  aud: readonly string[];
   /** Segundos desde 1970. */
   ahora: number;
 }
@@ -54,8 +54,9 @@ function esNumero(x: unknown): x is number {
   return typeof x === 'number' && Number.isFinite(x);
 }
 
-function incluyeAud(aud: unknown, esperada: string): boolean {
-  return aud === esperada || (Array.isArray(aud) && aud.includes(esperada));
+function incluyeAud(aud: unknown, esperadas: readonly string[]): boolean {
+  const delToken = Array.isArray(aud) ? aud : [aud];
+  return delToken.some((a) => typeof a === 'string' && esperadas.includes(a));
 }
 
 export async function verificarJwt(token: string, claves: readonly ClaveJwk[], esperado: Esperado): Promise<Verificacion> {

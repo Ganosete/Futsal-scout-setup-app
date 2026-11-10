@@ -5,7 +5,7 @@ import { crearFirmante, type Firmante } from './firmante';
 const ISS = 'https://equipo.cloudflareaccess.com';
 const AUD = 'aud-de-la-aplicacion';
 const AHORA = 1_800_000_000;
-const ESPERADO = { iss: ISS, aud: AUD, ahora: AHORA };
+const ESPERADO = { iss: ISS, aud: [AUD], ahora: AHORA };
 const CARGA = { iss: ISS, aud: [AUD], email: 'ana@club.es', exp: AHORA + 3600, nbf: AHORA - 10, iat: AHORA - 10 };
 
 let firmante: Firmante;
@@ -30,6 +30,13 @@ describe('verificarJwt', () => {
   it('aud puede ser una cadena o una lista, pero tiene que estar la de la aplicacion', async () => {
     expect((await verificar({ ...CARGA, aud: AUD })).ok).toBe(true);
     expect(await verificar({ ...CARGA, aud: ['otra'] })).toMatchObject({ ok: false, motivo: 'otra aplicacion' });
+  });
+
+  it('con varias aplicaciones (workers.dev y vistas previas), vale cualquiera de ellas', async () => {
+    const token = await firmante.firmar({ ...CARGA, aud: ['aud-de-las-vistas-previas'] });
+    const conDos = { ...ESPERADO, aud: [AUD, 'aud-de-las-vistas-previas'] };
+    expect((await verificarJwt(token, [firmante.clave], conDos)).ok).toBe(true);
+    expect((await verificarJwt(token, [firmante.clave], ESPERADO)).ok).toBe(false);
   });
 
   it('otro emisor no vale, aunque la firma sea buena', async () => {

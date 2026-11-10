@@ -102,6 +102,13 @@ describe('detras de Access', () => {
     expect(buscarClaves).toHaveBeenCalledTimes(2);
   });
 
+  it('varias AUD separadas por comas: vale el token de cualquiera de las aplicaciones', async () => {
+    const { identificar } = conClaves([vieja.clave]);
+    const config = { ...CONFIG, ACCESS_AUD: 'aud-0, aud-1' };
+    const r = await identificar(peticion('https://scout.club.es/api', { 'cf-access-jwt-assertion': await token(vieja) }), config);
+    expect(r).toEqual({ ok: true, email: 'ana@club.es' });
+  });
+
   it('un token sin email (un token de servicio) no identifica a nadie', async () => {
     const { identificar } = conClaves([vieja.clave]);
     const r = await identificar(peticion('https://scout.club.es/api', { 'cf-access-jwt-assertion': await token(vieja, { email: undefined }) }), CONFIG);
