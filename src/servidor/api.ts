@@ -3,6 +3,7 @@ import { origenPermitido } from './acceso/origen';
 import type { Contexto } from './contexto';
 import { borrar, crear, listar, ver } from './partidos/partidos';
 import { completar, subirParte } from './partidos/subida';
+import { video } from './partidos/video';
 import { error } from './respuestas';
 import { crearEnrutador, type Manejador } from './rutas';
 import { salud } from './salud';
@@ -30,5 +31,6 @@ export function crearApi(identificar: Identificador): (peticion: Request, env: E
     { metodo: 'DELETE', patron: '/api/partidos/:id', manejar: privada(borrar) },
     { metodo: 'PUT', patron: '/api/partidos/:id/partes/:numero', manejar: privada(subirParte) },
     { metodo: 'POST', patron: '/api/partidos/:id/completar', manejar: privada(completar) },
+    { metodo: 'GET', patron: '/api/partidos/:id/video', manejar: privada(video) },
   ]);
 }
