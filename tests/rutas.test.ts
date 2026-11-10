@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { crearEnrutador, type Parametros } from '../src/servidor/rutas';
-import { json } from '../src/servidor/respuestas';
+import { FalloApi, json } from '../src/servidor/respuestas';
 import { salud } from '../src/servidor/salud';
 
 const BASE = 'https://futsal-scout.test';
@@ -9,10 +9,22 @@ function peticion(metodo: string, camino: string): Request {
   return new Request(`${BASE}${camino}`, { method: metodo });
 }
 
+interface Contexto {
+  dueno: string;
+}
+
 describe('crearEnrutador', () => {
   const vistos: Parametros[] = [];
-  const enrutar = crearEnrutador([
+  const llamar = crearEnrutador<Contexto>([
     { metodo: 'GET', patron: '/api/salud', manejar: salud },
+    { metodo: 'GET', patron: '/api/yo', manejar: (_p, _par, contexto) => json({ dueno: contexto.dueno }) },
+    {
+      metodo: 'GET',
+      patron: '/api/partidos/:id/video',
+      manejar: () => {
+        throw new FalloApi(416, 'Ese trozo no está en el vídeo.', { 'content-range': 'bytes */100' });
+      },
+    },
     {
       metodo: 'GET',
       patron: '/api/partidos/:id',
@@ -30,6 +42,7 @@ describe('crearEnrutador', () => {
       },
     },
   ]);
+  const enrutar = (p: Request): Promise<Response> => llamar(p, { dueno: 'ana@club.es' });
 
   it('/api/salud responde ok, con la version y sin cache', async () => {
     const r = await enrutar(peticion('GET', '/api/salud'));
@@ -70,6 +83,18 @@ describe('crearEnrutador', () => {
   it('un parametro mal codificado es un 400, no un 500', async () => {
     const r = await enrutar(peticion('GET', '/api/partidos/%E0%A4%A'));
     expect(r.status).toBe(400);
+  });
+
+  it('el contexto llega tal cual al manejador', async () => {
+    expect(await (await enrutar(peticion('GET', '/api/yo'))).json()).toEqual({ dueno: 'ana@club.es' });
+  });
+
+  it('un FalloApi es su respuesta: estado, mensaje y cabeceras', async () => {
+    const r = await enrutar(peticion('GET', '/api/partidos/7/video'));
+    expect(r.status).toBe(416);
+    expect(r.headers.get('content-range')).toBe('bytes */100');
+    expect(r.headers.get('cache-control')).toBe('no-store');
+    expect(await r.json()).toEqual({ error: 'Ese trozo no está en el vídeo.' });
   });
 
   it('un fallo dentro del manejador da 500 sin contar el detalle', async () => {

@@ -16,3 +16,18 @@ export function json(datos: unknown, estado = 200, cabeceras: Readonly<Record<st
 export function error(estado: number, mensaje: string, cabeceras: Readonly<Record<string, string>> = {}): Response {
   return json({ error: mensaje }, estado, cabeceras);
 }
+
+/**
+ * Un fallo que si se le cuenta a quien llama: lo lanza un manejador (un
+ * partido que no existe, un cuerpo que no vale) y el enrutador lo convierte en
+ * su respuesta. Asi cada comprobacion es una linea y no un `if` con `return`.
+ */
+export class FalloApi extends Error {
+  constructor(
+    readonly estado: number,
+    mensaje: string,
+    readonly cabeceras: Readonly<Record<string, string>> = {},
+  ) {
+    super(mensaje);
+  }
+}

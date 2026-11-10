@@ -1,4 +1,4 @@
-import { error } from './respuestas';
+import { FalloApi, error } from './respuestas';
 
 /**
  * Enrutador minimo para la API. Para una docena de rutas no compensa un
@@ -7,21 +7,24 @@ import { error } from './respuestas';
  *
  * Patrones con segmentos fijos y parametros (`/api/partidos/:id`). La barra
  * final no cuenta. Un HEAD se atiende con el GET de la ruta y sin cuerpo.
+ *
+ * Cada peticion lleva un contexto (los bindings, y en las rutas privadas quien
+ * llama) que el enrutador no mira: solo lo pasa.
  */
 
 export type Metodo = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export type Parametros = Readonly<Record<string, string>>;
 
-export type Manejador = (peticion: Request, parametros: Parametros) => Response | Promise<Response>;
+export type Manejador<C> = (peticion: Request, parametros: Parametros, contexto: C) => Response | Promise<Response>;
 
-export interface Ruta {
+export interface Ruta<C> {
   metodo: Metodo;
   patron: string;
-  manejar: Manejador;
+  manejar: Manejador<C>;
 }
 
-interface RutaCompilada extends Ruta {
+interface RutaCompilada<C> extends Ruta<C> {
   trozos: readonly string[];
 }
 
@@ -41,10 +44,10 @@ function encajar(trozos: readonly string[], camino: readonly string[]): Record<s
   return parametros;
 }
 
-export function crearEnrutador(rutas: readonly Ruta[]): (peticion: Request) => Promise<Response> {
-  const compiladas: RutaCompilada[] = rutas.map((r) => ({ ...r, trozos: trocear(r.patron) }));
+export function crearEnrutador<C>(rutas: readonly Ruta<C>[]): (peticion: Request, contexto: C) => Promise<Response> {
+  const compiladas: RutaCompilada<C>[] = rutas.map((r) => ({ ...r, trozos: trocear(r.patron) }));
 
-  return async (peticion) => {
+  return async (peticion, contexto) => {
     const camino = trocear(new URL(peticion.url).pathname);
     const metodo = peticion.method === 'HEAD' ? 'GET' : peticion.method;
     const permitidos = new Set<string>();
@@ -57,11 +60,12 @@ export function crearEnrutador(rutas: readonly Ruta[]): (peticion: Request) => P
           if (r.metodo === 'GET') permitidos.add('HEAD');
           continue;
         }
-        const respuesta = await r.manejar(peticion, parametros);
+        const respuesta = await r.manejar(peticion, parametros, contexto);
         if (peticion.method !== 'HEAD') return respuesta;
         return new Response(null, { status: respuesta.status, headers: respuesta.headers });
       }
     } catch (e) {
+      if (e instanceof FalloApi) return error(e.estado, e.message, e.cabeceras);
       if (e instanceof URIError) return error(400, 'La dirección está mal formada.');
       // El detalle va al registro del Worker, no a quien llama.
       console.error('Fallo atendiendo', peticion.method, peticion.url, e);
