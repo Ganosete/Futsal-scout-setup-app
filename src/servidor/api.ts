@@ -3,6 +3,8 @@ import { origenPermitido } from './acceso/origen';
 import { crear as crearEnlace, listar as listarEnlaces, quitar as quitarEnlace } from './compartir/enlaces';
 import { verCompartido, videoCompartido } from './compartir/jugadores';
 import type { Contexto } from './contexto';
+import { crearServirModelo, verManifiesto } from './modelos';
+import { guardarDetecciones, leerDetecciones } from './partidos/detecciones';
 import { guardar, guardarSenales, leer } from './partidos/edicion';
 import { borrar, crear, listar, ver } from './partidos/partidos';
 import { completar, subirParte } from './partidos/subida';
@@ -16,7 +18,7 @@ import { salud } from './salud';
  * hay publicada aunque Access no este configurado); el resto pide saber quien
  * llama, y lo que no es GET, que venga de la propia web.
  */
-export function crearApi(identificar: Identificador): (peticion: Request, env: Env) => Promise<Response> {
+export function crearApi(identificar: Identificador, traer: typeof fetch = fetch): (peticion: Request, env: Env) => Promise<Response> {
   const privada =
     (manejar: Manejador<Contexto>): Manejador<Env> =>
     async (peticion, parametros, env) => {
@@ -38,9 +40,13 @@ export function crearApi(identificar: Identificador): (peticion: Request, env: E
     { metodo: 'GET', patron: '/api/partidos/:id/edicion', manejar: privada(leer) },
     { metodo: 'PUT', patron: '/api/partidos/:id/edicion', manejar: privada(guardar) },
     { metodo: 'PUT', patron: '/api/partidos/:id/senales', manejar: privada(guardarSenales) },
+    { metodo: 'GET', patron: '/api/partidos/:id/detecciones', manejar: privada(leerDetecciones) },
+    { metodo: 'PUT', patron: '/api/partidos/:id/detecciones', manejar: privada(guardarDetecciones) },
     { metodo: 'GET', patron: '/api/partidos/:id/enlaces', manejar: privada(listarEnlaces) },
     { metodo: 'POST', patron: '/api/partidos/:id/enlaces', manejar: privada(crearEnlace) },
     { metodo: 'DELETE', patron: '/api/partidos/:id/enlaces/:token', manejar: privada(quitarEnlace) },
+    { metodo: 'GET', patron: '/api/modelos/detector', manejar: privada(verManifiesto) },
+    { metodo: 'GET', patron: '/api/modelos/:id/:version/:archivo', manejar: privada(crearServirModelo(traer)) },
   ]);
 }
 

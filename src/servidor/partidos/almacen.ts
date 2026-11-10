@@ -36,6 +36,7 @@ export const claves = {
   video: (id: string) => `partidos/${id}/video`,
   edicion: (id: string) => `partidos/${id}/edicion.json`,
   senales: (id: string) => `partidos/${id}/senales.json`,
+  detecciones: (id: string) => `partidos/${id}/detecciones.json`,
 };
 
 export function aPartido(f: FilaPartido, partes: readonly number[]): Partido {

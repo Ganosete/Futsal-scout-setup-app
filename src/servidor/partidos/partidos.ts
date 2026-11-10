@@ -87,7 +87,7 @@ export async function borrar(_peticion: Request, { id }: Parametros, ctx: Contex
   // Borrar lo que ya no esta no es un error: el resultado es el mismo.
   if (!fila) return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } });
   if (fila.subida_id) await env.VIDEOS.resumeMultipartUpload(claves.video(id), fila.subida_id).abort().catch(() => undefined);
-  await env.VIDEOS.delete([claves.video(id), claves.edicion(id), claves.senales(id)]);
+  await env.VIDEOS.delete([claves.video(id), claves.edicion(id), claves.senales(id), claves.detecciones(id)]);
   await borrarPartido(env.BD, dueno, id);
   return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } });
 }
