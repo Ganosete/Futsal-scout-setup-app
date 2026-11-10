@@ -22,7 +22,8 @@
     "videos:prueba": "bash tools/crear_videos_prueba.sh"
   },
   "dependencies": {
-    "mediabunny": "^1.65.2"
+    "mediabunny": "^1.65.2",
+    "onnxruntime-web": "^1.31.1"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.68.0",
