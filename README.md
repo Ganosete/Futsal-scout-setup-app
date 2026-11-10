@@ -10,7 +10,7 @@ compartir los clips con tus jugadores.
 
 ## Estado
 
-**Fase 1 (MVP) en curso.** Lo que hay:
+**Fases 1 y 2 hechas; falta medirlas con partidos reales.** Lo que hay:
 
 1. **Nuevo partido:** eliges el vídeo y se comprueba al momento (duración, imagen, sonido,
    tamaño, y si hay algo que impida usarlo o que vaya a salir peor).
@@ -20,15 +20,25 @@ compartir los clips con tus jugadores.
 3. **Revisar:** un editor con el vídeo, la línea de tiempo y la lista de fragmentos. Equipo con
    un clic, unir, partir, ajustar inicio y fin, quitar, marcar las partes, y deshacer, todo con
    atajos de teclado. Cada cambio se guarda solo.
-4. **Mis partidos:** lo subido, para volver a abrirlo (el vídeo se ve desde el servidor) o
+4. **Quién ataca:** con un botón, el navegador busca en cada fragmento qué jugador tiene el
+   balón, agrupa las camisetas en dos colores y pregunta cuál lleva el local. Con la respuesta
+   pone el equipo de cada fragmento y, si quieres, lo parte donde cambia la posesión. Lo que
+   hayas puesto a mano no se toca, y lo que pone se deshace como cualquier corrección. Lo que ve
+   el detector se guarda: al abrir el partido otro día basta con contestar la pregunta.
+5. **Ver solo un equipo o una parte**, en el editor y en la página de los jugadores, también al
+   verlo todo seguido.
+6. **Mis partidos:** lo subido, para volver a abrirlo (el vídeo se ve desde el servidor) o
    borrarlo.
-5. **Descargar en MP4** cualquier fragmento, sin recodificar y con un nombre que dice partido,
+7. **Descargar en MP4** cualquier fragmento, sin recodificar y con un nombre que dice partido,
    fecha, jugada y minuto.
-6. **Compartir con los jugadores:** un enlace (7 días, 30 días o sin caducidad) con el que ven y
+8. **Compartir con los jugadores:** un enlace (7 días, 30 días o sin caducidad) con el que ven y
    descargan las jugadas desde el móvil, sin cuenta. El entrenador ve cuántas veces se ha abierto
    y lo quita cuando quiere; lo que corrija después, los jugadores lo ven al volver a abrirlo.
 
-Falta medir el detector con partidos reales.
+**Lo que tarda «Quién ataca».** La primera vez descarga el detector (108 MB) y lo guarda en el
+navegador. Con tarjeta gráfica (WebGPU) mira 3 fotogramas por segundo de juego. Sin ella mira uno
+cada 2 s y aun así va despacio: en las pruebas, cada fotograma tardó 1,5 s, así que un partido con
+45 min de juego son unos 35 min. Con WebGPU aún no está medido.
 
 ## Qué hará
 
@@ -52,6 +62,8 @@ Navegador del entrenador
   ├─ a la vez lo analiza en un worker: silbato en el audio y
   │  movimiento de la imagen → tramos de balón parado
   ├─ editor: corrige, une, parte y ajusta; cada cambio se guarda solo
+  ├─ «Quién ataca»: el detector (RF-DETR Nano) en otro worker, con WebGPU si
+  │  hay → quién tiene el balón → color de su camiseta → equipo de cada fragmento
   └─ descarga en MP4 sin recodificar, leyendo de R2 solo el clip
 Worker de Cloudflare: la página y la API   R2 (UE): vídeos y jugadas   D1: partidos y enlaces
 Jugadores: /v/<token> → las jugadas, para verlas y descargarlas, sin cuenta
@@ -78,7 +90,17 @@ Jugadores: /v/<token> → las jugadas, para verlas y descargarlas, sin cuenta
   puede adivinar, y es lo único que abre la página. Todo lo suyo va bajo `/v/` (la página, su API
   y los estáticos), que es lo único que queda fuera de Access. Ven el partido y las jugadas, y
   nada más: ni el email del entrenador, ni el fichero, ni las correcciones.
-- La detección del balón parado parte de la de
+- **Quién ataca.** De los jugadores que ve el detector, el que tiene los pies más cerca del balón
+  (medido en alturas de jugador, sin calibrar la pista) es el que lo lleva, y el color de su
+  camiseta vota por su equipo. Los colores se agrupan solos en dos; el entrenador solo dice cuál
+  es el del local. Nunca se mira en qué mitad está el balón: en sala, con presión alta y salidas
+  de balón, eso no dice quién ataca. Un fragmento lleva equipo si al menos el 65 % de sus votos
+  (y dos como mínimo) coinciden; si no, se queda sin equipo para que lo revises. Si dentro de un
+  fragmento la posesión cambia y dura al menos 3 s, se puede partir ahí.
+- **El detector** lo trae el Worker de Hugging Face, así que la página no habla con nadie más
+  (la CSP solo deja conectar con el propio origen). El navegador comprueba su tamaño y su SHA-256
+  y lo guarda en su caché.
+- La detección del balón parado y la de los equipos parten de las de
   [futsal-tracking](https://github.com/Ganosete/futsal-tracking) (ver más abajo).
 
 ## Arrancar
@@ -92,6 +114,10 @@ npm run dev        # http://localhost:5173, con el Worker en workerd
 ```
 
 En local no hay Cloudflare Access: entras como «entrenador@localhost», y D1 y R2 son locales.
+«Quién ataca» necesita internet la primera vez, para traer el detector de Hugging Face. Las
+pruebas no lo usan: llevan uno de juguete con la misma entrada y las mismas salidas
+(`tests/fixtures/detector_prueba.onnx`, de `tools/crear_modelo_prueba.py`), que siempre ve dos
+jugadores y el balón a los pies de uno.
 
 | Comando | Qué hace |
 |---|---|
@@ -161,7 +187,7 @@ que no alcanzan para guardar las jugadas de un partido muy corregido; el plan de
 |---|---|---|
 | **0. Base** ✅ | Repositorio, estructura, TypeScript, Vitest, Playwright, CI, despliegue y formulario de subida que valida el vídeo en el navegador | — |
 | **1. MVP** | ✅ análisis en el navegador (silbato + movimiento + calmas largas) y límites de cada parte · ✅ editor: equipo con un clic, unir, partir, ajustar inicio y fin, quitar, deshacer · ✅ descarga en MP4 sin recodificar · ✅ subida reanudable a R2 mientras se analiza, partidos en D1, Cloudflare Access, «Mis partidos» y guardado automático · ✅ enlace para jugadores · medida con 2-3 partidos reales | 1, 2, 4, 6 |
-| **2. Equipos y partes** | Colores de cada equipo, detector en el navegador, posesión por fragmento (sin usar la mitad del campo), partir por posesión, filtros por equipo y parte | 3, 5 |
+| **2. Equipos y partes** | ✅ detector en el navegador · ✅ colores de cada equipo (se agrupan solos; el entrenador dice cuál es el local) · ✅ posesión por fragmento, sin usar la mitad del campo · ✅ partir por posesión · ✅ filtros por equipo y parte · medida con partidos reales | 3, 5 |
 | **3. Mejor detección** | Balón fuera con cámara fija calibrada, posesión por contacto, detector afinado para el balón de sala | 2, 3 |
 | **4. Selección y ritmo** | Estrellas y vídeo de la selección (unido sin recodificar), gráfico del ritmo del partido | 7, 8 |
 | **5. Usuarios y planes** | Altas por email, planes gratuito, Scout y Pro con límites, pago en maqueta | 10 |
@@ -173,18 +199,30 @@ descanso llevan silbato o una calma larga y se cortarán bien. Muchas bandas y c
 silbato: esos fragmentos saldrán con unos segundos de balón parado dentro y se parten con una
 tecla. Cada corrección se guarda para medir el detector con partidos reales y ajustar sus umbrales.
 
+**Y de «Quién ataca»:** no había vídeos de sala a mano, así que se probó con 3 imágenes de fútbol
+de un conjunto público (`martinjolif/football-player-detection`). El detector vio 60 de las 66
+personas anotadas y el balón en 1 de las 3 imágenes: el balón es lo que más falla, y sin balón no
+hay voto. Las camisetas se agruparon bien (blanca y verde lima, con los colores muy separados),
+pero el reparto salió desigual, 44 muestras de la blanca y 15 de la verde lima, porque quitar el
+color del suelo también se come parte de una camiseta verde sobre el césped. En sala el balón
+sale más grande y el suelo rara vez es del color de una camiseta, pero hasta medirlo con partidos
+de verdad no hay cifra. Afinar el detector para el balón de sala es la fase 3.
+
 ## Relación con futsal-tracking
 
 [futsal-tracking](https://github.com/Ganosete/futsal-tracking) analiza partidos en el navegador
 (seguimiento, calibración, eventos). De ahí se **copian**, sin tocar aquel repositorio, los
 módulos de balón parado de su rama `solo-eventos` (`src/balonParado/`: silbato, movimiento,
-tramos y fusión de señales) y la huella de un fichero de su `main` (`src/store/huella.ts`), con sus
-pruebas, y más adelante el detector y la clasificación por color de camiseta. Cada fichero copiado lleva en la cabecera de dónde viene y qué se ha cambiado.
+tramos y fusión de señales), y de su `main` la huella de un fichero (`src/store/huella.ts`), el
+detector (preproceso, posproceso de RF-DETR y sesión de onnxruntime, de `src/infer/`) y el
+descriptor de color de camiseta con su k-medias (`src/team/`), con sus pruebas. Cada fichero
+copiado lleva en la cabecera de dónde viene y qué se ha cambiado.
 
-No se copian su lector de vídeo (lee el MP4 de principio a fin y no vale para partidos de varios
-gigas con el índice al final), su exportación de vídeo (graba en tiempo real con `MediaRecorder`)
-ni su seguimiento por jugador, sus métricas y su calibración por fotogramas clave, que son otro
-producto.
+No se copian su clasificador de equipos, que vota por cada pista del seguimiento (aquí se vota
+por fragmento, sin seguir a nadie), su lector de vídeo (lee el MP4 de principio a fin y no vale
+para partidos de varios gigas con el índice al final), su exportación de vídeo (graba en tiempo
+real con `MediaRecorder`) ni su seguimiento por jugador, sus métricas y su calibración por
+fotogramas clave, que son otro producto.
 
 ## Estructura
 
@@ -193,6 +231,7 @@ src/cliente/     Navegador (DOM a pelo, sin framework):
   subida/          formulario, metadatos, validación, huella y subidor por partes
   analisis/        worker que lee audio e imagen
   partido/         «Subir y analizar», «Mis partidos», la sección «Jugadas» y «Compartir»
+  equipos/         «Quién ataca»: descarga del detector, worker que detecta y la pregunta del color
   jugadores/       la página de los jugadores (jugadores.html, en /v/<token>)
   editor/          editor de fragmentos: operaciones puras, historial, guardado, vídeo, línea y lista
   descarga/        recorte a MP4 sin recodificar y nombre del fichero
@@ -201,8 +240,11 @@ src/servidor/    Worker: enrutador mínimo y API
   acceso/          quién llama (JWT de Cloudflare Access) y de qué web viene
   partidos/        partidos en D1, subida multiparte a R2, vídeo por rangos y jugadas
   compartir/       enlaces de los jugadores y lo que ven con ellos
-src/comun/       Tipos y funciones puras que usan los dos lados
-src/nucleo/      Detección del balón parado: TypeScript puro, sin DOM (parte copiada de futsal-tracking)
+src/comun/       Tipos y funciones puras que usan los dos lados (formatos, validación, filtros)
+src/nucleo/      Detección, en TypeScript puro y sin DOM (parte copiada de futsal-tracking):
+  balonParado/     silbato, movimiento y tramos de balón parado
+  deteccion/       preproceso y posproceso de RF-DETR
+  equipos/         color de camiseta, los dos grupos y la posesión
 migrations/      Esquema de D1
 tests/           Pruebas unitarias (Vitest, en Node), del Worker (tests/servidor, en workerd) y vídeos
 e2e/             Pruebas de la página (Playwright)
@@ -213,4 +255,7 @@ tools/           Scripts que no forman parte de la aplicación
 
 - [Mediabunny](https://github.com/Vanilagy/mediabunny) (lectura y recorte de vídeo): MPL-2.0. Se
   usa tal cual, sin modificar.
-- El detector que llegará en la fase 2 (RF-DETR) es Apache 2.0.
+- [onnxruntime-web](https://github.com/microsoft/onnxruntime) (ejecuta el detector en el
+  navegador): MIT.
+- El detector, RF-DETR Nano: pesos de Roboflow con licencia Apache 2.0, convertidos a ONNX por
+  PierreMarieCurie (MIT). No va en el repositorio: el Worker lo trae de Hugging Face.

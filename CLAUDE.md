@@ -29,7 +29,7 @@ está en el README.
 
 - `src/cliente/` corre en el navegador; `src/servidor/` en el Worker (sin DOM; sus tipos los
   genera `wrangler types`); `src/comun/` son tipos y funciones puras que usan los dos.
-- `src/nucleo/` será la detección: **TypeScript puro, sin DOM ni APIs del Worker**, porque tiene
+- `src/nucleo/` es la detección: **TypeScript puro, sin DOM ni APIs del Worker**, porque tiene
   que correr en el navegador, en un worker del navegador y en Node (fase 6, en Containers).
 - **Un fragmento es `[desde, hasta)` sobre el vídeo original.** No se recorta nada hasta que
   alguien descarga, y entonces sin recodificar.
@@ -138,3 +138,25 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
   accesibles distintos (`aria-label`): un lector de pantalla, y Playwright, no los distinguen.
 - En Playwright, un clic por coordenadas (`page.mouse`) en algo que queda por debajo del borde
   de la ventana cae fuera: usa `locator.click({ position })`, que desplaza antes.
+- **onnxruntime-web va con `onnxruntime-web/jspi`** (`cliente/equipos/sesion.ts`): su `.wasm`, con
+  WebGPU, mide 17,9 MB y cabe como estático de Cloudflare (máximo 25 MiB por fichero); el de
+  `/webgpu` no cabe. Compilar WebAssembly pide `'wasm-unsafe-eval'` en la CSP, y nada más. Sin
+  aislamiento entre orígenes no hay `SharedArrayBuffer`: un hilo.
+- **El detector no va en el repositorio ni en las pruebas.** El Worker lo trae de Hugging Face
+  (`/api/modelos/...`, comprueba el tamaño) y el navegador comprueba el SHA-256 y lo guarda en
+  Cache Storage. Si cambia el fichero, sube `version` en `comun/modelos.ts`: va en la ruta y
+  renueva la caché. Las pruebas usan uno de juguete con la misma firma
+  (`tests/fixtures/detector_prueba.onnx`, de `tools/crear_modelo_prueba.py`); en Playwright se
+  sirve con `page.route` sobre `/api/modelos/detector`.
+- El Chromium de Playwright no tiene WebGPU: las pruebas recorren el camino de WASM.
+- **Sin detecciones guardadas, `GET .../detecciones` responde 204, no 404**: un 404 esperado sale
+  como error en la consola del navegador.
+- **Lo que pone «Quién ataca» entra por `editor.cambiar`**: va al historial (se deshace con
+  Ctrl+Z) y se guarda como cualquier cambio, pero no toca lo `manual` ni se apunta en
+  `correcciones`, que son las decisiones del entrenador y la verdad con la que se mide el
+  detector.
+- **Medida sin tocar umbrales:** quitar el color del suelo se come parte de una camiseta verde
+  lima sobre césped (3 imágenes de fútbol: 44 muestras de la blanca y 15 de la verde). Se mira
+  otra vez con partidos de sala antes de cambiar nada en `nucleo/equipos/color.ts`.
+- **Filtrar no cambia los fragmentos** (`comun/filtros.ts`): solo cuáles se enseñan y cuáles se
+  recorren. Cada fila lleva su número de la lista entera, que es el de las descargas.
