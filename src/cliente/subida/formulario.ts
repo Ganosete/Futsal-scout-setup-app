@@ -1,5 +1,5 @@
 import { el } from '../dom';
-import { hoyLocal, validarDatosPartido, type Campo, type ProblemaCampo } from './datosPartido';
+import { hoyLocal, validarDatosPartido, type Campo, type ProblemaCampo } from '../../comun/datosPartido';
 import type { LecturaVideo } from './metadatos';
 import { filasDatos } from './resumenVideo';
 import { hayErrores, ordenar, problemaDeLectura, validarFichero, validarMetadatos, type Problema } from './validacion';

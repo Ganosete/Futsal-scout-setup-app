@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LARGO_MAXIMO_EQUIPO, esFechaValida, hoyLocal, validarDatosPartido } from '../src/cliente/subida/datosPartido';
+import { LARGO_MAXIMO_EQUIPO, esFechaValida, hoyLocal, validarDatosPartido } from '../src/comun/datosPartido';
 
 const HOY = '2026-11-09';
 const bien = { local: 'Castillo de Requena FS', visitante: 'Feme Castellón', fecha: '2026-11-08' };

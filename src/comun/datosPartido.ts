@@ -1,6 +1,9 @@
 /**
  * Los datos del partido que acompanan al video. Cada problema va pegado a su
  * campo para que el formulario lo ensene debajo de el.
+ *
+ * El servidor valida lo mismo al crear el partido (solo los errores: los
+ * avisos son para quien rellena el formulario), y por eso vive en comun.
  */
 
 export interface DatosPartido {
