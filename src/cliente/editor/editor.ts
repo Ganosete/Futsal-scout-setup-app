@@ -10,7 +10,8 @@ import { Historial } from './historial';
 import { aplicarPartes, moverBordeParte, type Borde } from './limitesPartes';
 import { LineaTiempo } from './lineaTiempo';
 import { ListaFragmentos } from './listaFragmentos';
-import { fragmentoEn, moverFin, moverInicio, partir, ponerEquipo, quitar, unirConSiguiente, type EstadoEditor } from './operaciones';
+import { corregir } from './correcciones';
+import { fragmentoEn, ponerEquipo, type EstadoEditor } from './operaciones';
 import { PanelPartes } from './panelPartes';
 import { Reproductor } from './reproductor';
 
@@ -155,36 +156,6 @@ export function crearEditor(): Editor {
     aplicar(ponerEquipo(e, f.id, nuevo), () => (nuevo ? `Fragmento ${n}: ataca ${nombres()[nuevo]}.` : `Fragmento ${n}: sin equipo.`), '');
   }
 
-  function corregir(accion: 'unir' | 'partir' | 'inicioAqui' | 'finAqui' | 'quitar', e: EstadoEditor, t: number): void {
-    const f = e.fragmentos.find((x) => x.id === seleccionado);
-    if (accion === 'partir') {
-      const objetivo = fragmentoEn(e, t) ?? f;
-      if (!objetivo) return avisar('Lleva el vídeo dentro del fragmento que quieres partir.');
-      seleccionado = objetivo.id;
-      const n = numero(e, objetivo.id);
-      return aplicar(
-        partir(e, objetivo.id, t, () => crypto.randomUUID()),
-        () => `Fragmento ${n} partido en ${formatearDuracion(t)}.`,
-        'Para partir, el vídeo tiene que estar dentro del fragmento y a más de medio segundo de sus bordes.',
-      );
-    }
-    if (!f) return;
-    const n = numero(e, f.id);
-    const bordes = (nuevo: EstadoEditor): string => {
-      const g = nuevo.fragmentos.find((x) => x.id === f.id);
-      return g ? `${formatearDuracion(g.desde)} – ${formatearDuracion(g.hasta)}` : '';
-    };
-    if (accion === 'unir') {
-      aplicar(unirConSiguiente(e, f.id), () => `Fragmentos ${n} y ${n + 1} unidos.`, 'No hay un fragmento siguiente en la misma parte con el que unirlo.');
-    } else if (accion === 'inicioAqui') {
-      aplicar(moverInicio(e, f.id, t), (nuevo) => `Fragmento ${n}: ${bordes(nuevo)}.`, 'El inicio ya está ahí, o pisaría al fragmento anterior.');
-    } else if (accion === 'finAqui') {
-      aplicar(moverFin(e, f.id, t), (nuevo) => `Fragmento ${n}: ${bordes(nuevo)}.`, 'El final ya está ahí, o pisaría al fragmento siguiente.');
-    } else {
-      aplicar(quitar(e, f.id), () => `Fragmento ${n} quitado.`, '');
-    }
-  }
-
   function ejecutar(accion: AccionEditor): void {
     const e = actual();
     if (!e || !historial) return;
@@ -222,8 +193,13 @@ export function crearEditor(): Editor {
         if (hecho) alCambiar(historial.estado);
         return avisar(hecho ? (accion === 'deshacer' ? 'Deshecho.' : 'Rehecho.') : 'No hay nada que ' + accion + '.');
       }
-      default:
-        return corregir(accion, e, t);
+      default: {
+        const c = corregir(accion, e, seleccionado, t, () => crypto.randomUUID());
+        if (c.tipo === 'aviso') return avisar(c.mensaje);
+        if (c.tipo === 'nada') return;
+        seleccionado = c.seleccionado;
+        return aplicar(c.nuevo, c.hecho, c.imposible);
+      }
     }
   }
 
