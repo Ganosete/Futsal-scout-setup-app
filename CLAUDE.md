@@ -77,7 +77,8 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
   SPA devuelve `index.html` también para la API.
 - **La CSP de `public/_headers` es estricta**: nada de scripts ni estilos en línea, y cualquier
   origen externo se añade a propósito.
-- Mediabunny se carga con un `import()` al elegir el vídeo: así la página inicial pesa 4-5 KB.
+- Mediabunny se carga con un `import()` al elegir el vídeo o al descargar: la página inicial
+  pesa unos 11 KB comprimidos (editor incluido) y Mediabunny, unos 80 KB, llega después.
 - Los source maps del cliente no se publican; los del Worker se suben a Cloudflare.
 - Mediabunny da la rotación en sentido horario; ffmpeg la guarda en antihorario (`rotado.mp4`:
   90 en ffmpeg, 270 en Mediabunny).
@@ -91,6 +92,10 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
   el entrenador ya había quitado.
 - **Un fragmento de menos de 3 s se une al vecino, no se tira** (`nucleo/fragmentos.ts`): puede
   ser una falta que acaba en gol.
+- **El recorte a MP4 empieza exacto y puede acabar uno o dos fotogramas tarde**
+  (`descarga/recorte.ts`): se copia desde el fotograma clave anterior con una lista de edición
+  que lo esconde, y al final hay que copiar el fotograma B del que depende el último. Como no
+  decodifica, se prueba en Node con los vídeos de verdad.
 - WebCodecs solo existe en un contexto seguro: `localhost` vale, `about:blank` no.
 - En Playwright, un clic por coordenadas (`page.mouse`) en algo que queda por debajo del borde
   de la ventana cae fuera: usa `locator.click({ position })`, que desplaza antes.

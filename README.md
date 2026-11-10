@@ -19,9 +19,11 @@ compartir los clips con tus jugadores.
 3. **Revisar:** un editor con el vídeo, la línea de tiempo y la lista de fragmentos. Equipo con
    un clic, unir, partir, ajustar inicio y fin, quitar, marcar las partes, y deshacer, todo con
    atajos de teclado.
+4. **Descargar en MP4** cualquier fragmento, sin recodificar y con un nombre que dice partido,
+   fecha, jugada y minuto.
 
-Falta la subida a R2 (las correcciones se pierden al recargar la página), la descarga en MP4 y
-el enlace para los jugadores.
+Falta la subida a R2 (las correcciones se pierden al recargar la página) y el enlace para los
+jugadores.
 
 ## Qué hará
 
@@ -56,7 +58,9 @@ Jugadores: un enlace con los clips, sin cuenta                   (fase 1)
 - **El corte es virtual.** Un fragmento es solo `[desde, hasta)` sobre el vídeo original: verlo es
   saltar a ese instante y corregirlo es cambiar dos números. Solo se genera un fichero cuando
   alguien descarga, y se hace sin recodificar: copiando los bytes de ese tramo y rehaciendo el
-  índice. El clip empieza en el fotograma clave anterior, normalmente 1-2 s antes.
+  índice. El clip empieza justo donde empieza el fragmento: se copia desde el fotograma clave
+  anterior y una lista de edición le dice al reproductor que se salte ese trozo. Al final puede
+  llevar uno o dos fotogramas de más.
 - La detección del balón parado parte de la de
   [futsal-tracking](https://github.com/Ganosete/futsal-tracking) (ver más abajo).
 
@@ -104,7 +108,7 @@ proteger la web con Cloudflare Access. Los comandos irán aquí cuando lleguen.
 | Fase | Contenido | Puntos |
 |---|---|---|
 | **0. Base** ✅ | Repositorio, estructura, TypeScript, Vitest, Playwright, CI, despliegue y formulario de subida que valida el vídeo en el navegador | — |
-| **1. MVP** | ✅ análisis en el navegador (silbato + movimiento + calmas largas) y límites de cada parte · ✅ editor: equipo con un clic, unir, partir, ajustar inicio y fin, quitar, deshacer · subida reanudable a R2 y partidos en D1, con Cloudflare Access (el análisis correrá mientras sube) · descarga en MP4 sin recodificar y enlace para jugadores · medida con 2-3 partidos reales | 1, 2, 4, 6 |
+| **1. MVP** | ✅ análisis en el navegador (silbato + movimiento + calmas largas) y límites de cada parte · ✅ editor: equipo con un clic, unir, partir, ajustar inicio y fin, quitar, deshacer · ✅ descarga en MP4 sin recodificar · subida reanudable a R2 y partidos en D1, con Cloudflare Access (el análisis correrá mientras sube) · enlace para jugadores · medida con 2-3 partidos reales | 1, 2, 4, 6 |
 | **2. Equipos y partes** | Colores de cada equipo, detector en el navegador, posesión por fragmento (sin usar la mitad del campo), partir por posesión, filtros por equipo y parte | 3, 5 |
 | **3. Mejor detección** | Balón fuera con cámara fija calibrada, posesión por contacto, detector afinado para el balón de sala | 2, 3 |
 | **4. Selección y ritmo** | Estrellas y vídeo de la selección (unido sin recodificar), gráfico del ritmo del partido | 7, 8 |
@@ -137,6 +141,7 @@ src/cliente/     Navegador (DOM a pelo, sin framework):
   subida/          formulario, lectura de metadatos y validación
   analisis/        worker que lee audio e imagen, y la sección «Jugadas»
   editor/          editor de fragmentos: operaciones puras, historial, vídeo, línea y lista
+  descarga/        recorte a MP4 sin recodificar y nombre del fichero
 src/servidor/    Worker: enrutador mínimo y API
 src/comun/       Tipos y funciones puras que usan los dos lados
 src/nucleo/      Detección del balón parado: TypeScript puro, sin DOM (parte copiada de futsal-tracking)
