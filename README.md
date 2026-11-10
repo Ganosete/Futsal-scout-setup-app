@@ -24,8 +24,11 @@ compartir los clips con tus jugadores.
    borrarlo.
 5. **Descargar en MP4** cualquier fragmento, sin recodificar y con un nombre que dice partido,
    fecha, jugada y minuto.
+6. **Compartir con los jugadores:** un enlace (7 días, 30 días o sin caducidad) con el que ven y
+   descargan las jugadas desde el móvil, sin cuenta. El entrenador ve cuántas veces se ha abierto
+   y lo quita cuando quiere; lo que corrija después, los jugadores lo ven al volver a abrirlo.
 
-Falta el enlace para los jugadores y medir el detector con partidos reales.
+Falta medir el detector con partidos reales.
 
 ## Qué hará
 
@@ -50,8 +53,8 @@ Navegador del entrenador
   │  movimiento de la imagen → tramos de balón parado
   ├─ editor: corrige, une, parte y ajusta; cada cambio se guarda solo
   └─ descarga en MP4 sin recodificar, leyendo de R2 solo el clip
-Worker de Cloudflare: la página y la API   R2 (UE): vídeos y jugadas   D1: partidos
-Jugadores: un enlace con los clips, sin cuenta                    (pendiente)
+Worker de Cloudflare: la página y la API   R2 (UE): vídeos y jugadas   D1: partidos y enlaces
+Jugadores: /v/<token> → las jugadas, para verlas y descargarlas, sin cuenta
 ```
 
 - **El análisis corre en el navegador** mientras se sube el vídeo, que ya está ahí: un Worker no
@@ -71,6 +74,10 @@ Jugadores: un enlace con los clips, sin cuenta                    (pendiente)
 - **Quién entra.** La web va detrás de Cloudflare Access (código por email) y el Worker verifica
   el JWT que manda Access en cada petición. Cada entrenador ve solo sus partidos. Con dos
   pestañas abiertas, la que se ha quedado atrás no puede pisar lo corregido en la otra.
+- **Los jugadores** no tienen cuenta: el enlace lleva un token de 128 bits al azar, que no se
+  puede adivinar, y es lo único que abre la página. Todo lo suyo va bajo `/v/` (la página, su API
+  y los estáticos), que es lo único que queda fuera de Access. Ven el partido y las jugadas, y
+  nada más: ni el email del entrenador, ni el fichero, ni las correcciones.
 - La detección del balón parado parte de la de
   [futsal-tracking](https://github.com/Ganosete/futsal-tracking) (ver más abajo).
 
@@ -138,7 +145,11 @@ de localhost: la página busca las jugadas, pero no sube ni guarda nada.
    por comas: `workers.dev` y las vistas previas son aplicaciones distintas). Está en *Zero Trust*
    → *Access controls* → *Applications* → *Edit* → *Additional settings* → *Application Audience
    (AUD) Tag*. No son secretos.
-3. Haz push.
+3. Deja fuera de Access lo de los jugadores, que entran sin cuenta: *Zero Trust* → *Access
+   controls* → *Applications* → *Create new application* → *Self-hosted*; como destino,
+   `futsal-scout.<subdominio>.workers.dev` con la ruta `v/*`, y una política *Bypass* para
+   *Everyone*. Una aplicación con ruta manda sobre la de todo el Worker.
+4. Haz push.
 
 **Límites del plan gratuito de Workers:** cuerpos de hasta 100 MB (las partes de la subida son de
 50 MiB), 100.000 peticiones al día (un partido de 4 GB son unas 80) y 10 ms de CPU por petición,
@@ -149,7 +160,7 @@ que no alcanzan para guardar las jugadas de un partido muy corregido; el plan de
 | Fase | Contenido | Puntos |
 |---|---|---|
 | **0. Base** ✅ | Repositorio, estructura, TypeScript, Vitest, Playwright, CI, despliegue y formulario de subida que valida el vídeo en el navegador | — |
-| **1. MVP** | ✅ análisis en el navegador (silbato + movimiento + calmas largas) y límites de cada parte · ✅ editor: equipo con un clic, unir, partir, ajustar inicio y fin, quitar, deshacer · ✅ descarga en MP4 sin recodificar · ✅ subida reanudable a R2 mientras se analiza, partidos en D1, Cloudflare Access, «Mis partidos» y guardado automático · enlace para jugadores · medida con 2-3 partidos reales | 1, 2, 4, 6 |
+| **1. MVP** | ✅ análisis en el navegador (silbato + movimiento + calmas largas) y límites de cada parte · ✅ editor: equipo con un clic, unir, partir, ajustar inicio y fin, quitar, deshacer · ✅ descarga en MP4 sin recodificar · ✅ subida reanudable a R2 mientras se analiza, partidos en D1, Cloudflare Access, «Mis partidos» y guardado automático · ✅ enlace para jugadores · medida con 2-3 partidos reales | 1, 2, 4, 6 |
 | **2. Equipos y partes** | Colores de cada equipo, detector en el navegador, posesión por fragmento (sin usar la mitad del campo), partir por posesión, filtros por equipo y parte | 3, 5 |
 | **3. Mejor detección** | Balón fuera con cámara fija calibrada, posesión por contacto, detector afinado para el balón de sala | 2, 3 |
 | **4. Selección y ritmo** | Estrellas y vídeo de la selección (unido sin recodificar), gráfico del ritmo del partido | 7, 8 |
@@ -181,13 +192,15 @@ producto.
 src/cliente/     Navegador (DOM a pelo, sin framework):
   subida/          formulario, metadatos, validación, huella y subidor por partes
   analisis/        worker que lee audio e imagen
-  partido/         «Subir y analizar», «Mis partidos» y la sección «Jugadas»
+  partido/         «Subir y analizar», «Mis partidos», la sección «Jugadas» y «Compartir»
+  jugadores/       la página de los jugadores (jugadores.html, en /v/<token>)
   editor/          editor de fragmentos: operaciones puras, historial, guardado, vídeo, línea y lista
   descarga/        recorte a MP4 sin recodificar y nombre del fichero
   api/             llamadas a la API
 src/servidor/    Worker: enrutador mínimo y API
   acceso/          quién llama (JWT de Cloudflare Access) y de qué web viene
   partidos/        partidos en D1, subida multiparte a R2, vídeo por rangos y jugadas
+  compartir/       enlaces de los jugadores y lo que ven con ellos
 src/comun/       Tipos y funciones puras que usan los dos lados
 src/nucleo/      Detección del balón parado: TypeScript puro, sin DOM (parte copiada de futsal-tracking)
 migrations/      Esquema de D1

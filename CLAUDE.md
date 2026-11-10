@@ -46,6 +46,12 @@ está en el README.
   (otra pestaña guardó antes) para el guardado automático en vez de pisar lo de la otra.
 - El formato de lo que se guarda y su validación están en `src/comun/`: el Worker lo comprueba al
   guardar y el navegador al abrir, con la misma función.
+- **Todo lo de los jugadores va bajo `/v/`**: la página (`/v/<token>`, que es `jugadores.html`),
+  su API (`/v/api/<token>`), los estáticos de las dos páginas (`/v/recursos/`) y el icono. Así en
+  Access basta una regla *Bypass* para `/v/*`. Esas rutas solo leen y las abre el token; no
+  devuelven nada del entrenador (`servidor/compartir/jugadores.ts`).
+- Son dos páginas de Vite (`index.html` y `jugadores.html`). La de los jugadores no importa nada
+  del editor salvo el reproductor y la descarga: pesa unos 9 KB comprimidos, estilos incluidos.
 
 ## Código copiado de futsal-tracking
 
@@ -125,5 +131,10 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
   Playwright eso cuelga un `reload()`: antes hay que esperar a «Vídeo subido.» y a «Cambios
   guardados.» (`esperarSubida`, `esperarGuardado`).
 - `Intl.NumberFormat` separa el número del `%` con un espacio duro (U+00A0).
+- `run_worker_first` lleva patrones negativos (`!/v/recursos/*`, `!/v/favicon.svg`): lo demás de
+  `/v/` pasa por el Worker. `env.ASSETS.fetch()` desde el Worker aplica `_headers`, así que
+  `/v/<token>` sale con la misma CSP.
+- Dos botones con el mismo texto (el «Quitar» del fragmento y el del enlace) necesitan nombres
+  accesibles distintos (`aria-label`): un lector de pantalla, y Playwright, no los distinguen.
 - En Playwright, un clic por coordenadas (`page.mouse`) en algo que queda por debajo del borde
   de la ventana cae fuera: usa `locator.click({ position })`, que desplaza antes.
