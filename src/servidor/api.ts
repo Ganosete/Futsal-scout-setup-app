@@ -1,5 +1,7 @@
 import type { Identificador } from './acceso/identidad';
 import { origenPermitido } from './acceso/origen';
+import { crear as crearEnlace, listar as listarEnlaces, quitar as quitarEnlace } from './compartir/enlaces';
+import { verCompartido, videoCompartido } from './compartir/jugadores';
 import type { Contexto } from './contexto';
 import { guardar, guardarSenales, leer } from './partidos/edicion';
 import { borrar, crear, listar, ver } from './partidos/partidos';
@@ -10,8 +12,8 @@ import { crearEnrutador, type Manejador } from './rutas';
 import { salud } from './salud';
 
 /**
- * Todas las rutas de la API. /api/salud es publica (dice que version hay
- * publicada aunque Access no este configurado); el resto pide saber quien
+ * Las rutas de la API del entrenador. /api/salud es publica (dice que version
+ * hay publicada aunque Access no este configurado); el resto pide saber quien
  * llama, y lo que no es GET, que venga de la propia web.
  */
 export function crearApi(identificar: Identificador): (peticion: Request, env: Env) => Promise<Response> {
@@ -36,5 +38,20 @@ export function crearApi(identificar: Identificador): (peticion: Request, env: E
     { metodo: 'GET', patron: '/api/partidos/:id/edicion', manejar: privada(leer) },
     { metodo: 'PUT', patron: '/api/partidos/:id/edicion', manejar: privada(guardar) },
     { metodo: 'PUT', patron: '/api/partidos/:id/senales', manejar: privada(guardarSenales) },
+    { metodo: 'GET', patron: '/api/partidos/:id/enlaces', manejar: privada(listarEnlaces) },
+    { metodo: 'POST', patron: '/api/partidos/:id/enlaces', manejar: privada(crearEnlace) },
+    { metodo: 'DELETE', patron: '/api/partidos/:id/enlaces/:token', manejar: privada(quitarEnlace) },
+  ]);
+}
+
+/**
+ * Las de los jugadores, bajo /v/ como su pagina: asi basta una regla de
+ * Access (Bypass para /v/*) para dejarlas fuera. Las abre el token, no una
+ * sesion, y solo leen.
+ */
+export function crearApiJugadores(): (peticion: Request, env: Env) => Promise<Response> {
+  return crearEnrutador<Env>([
+    { metodo: 'GET', patron: '/v/api/:token', manejar: verCompartido },
+    { metodo: 'GET', patron: '/v/api/:token/video', manejar: videoCompartido },
   ]);
 }
