@@ -7,6 +7,7 @@
 export type Accion =
   | 'reproducir'
   | 'verFragmento'
+  | 'descargar'
   | 'anterior'
   | 'siguiente'
   | 'atras'
@@ -42,6 +43,7 @@ const SIMPLES: Readonly<Record<string, Accion>> = {
   p: 'partir',
   i: 'inicioAqui',
   f: 'finAqui',
+  d: 'descargar',
   Delete: 'quitar',
   Backspace: 'quitar',
 };
@@ -76,7 +78,7 @@ export function teclaAjena(objetivo: EventTarget | null, key: string): boolean {
 }
 
 const ACCIONES = new Set<string>([
-  'reproducir', 'verFragmento', 'anterior', 'siguiente', 'atras', 'adelante', 'atrasFino', 'adelanteFino',
+  'reproducir', 'verFragmento', 'descargar', 'anterior', 'siguiente', 'atras', 'adelante', 'atrasFino', 'adelanteFino',
   'local', 'visitante', 'unir', 'partir', 'inicioAqui', 'finAqui', 'quitar', 'deshacer', 'rehacer',
 ]);
 

@@ -1,7 +1,7 @@
+import type { DatosNombre } from '../descarga/nombre';
 import { el } from '../dom';
 import { crearEditor, type Editor } from '../editor/editor';
 import { analizarVideo, type AnalisisEnCurso } from './cliente';
-import type { Nombres } from './resumen';
 
 /**
  * La seccion «Jugadas»: buscar el balon parado en el video elegido, con su
@@ -21,7 +21,7 @@ export interface PanelAnalisis {
 const PORCENTAJE = new Intl.NumberFormat('es-ES', { style: 'percent', maximumFractionDigits: 0 });
 const SEGUNDOS = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
 
-export function iniciarPanelAnalisis(nombres: () => Nombres): PanelAnalisis {
+export function iniciarPanelAnalisis(partido: () => DatosNombre): PanelAnalisis {
   const bloque = el<HTMLElement>('bloque-analisis');
   const botonAnalizar = el<HTMLButtonElement>('btn-analizar');
   const botonParar = el<HTMLButtonElement>('btn-parar-analisis');
@@ -29,7 +29,7 @@ export function iniciarPanelAnalisis(nombres: () => Nombres): PanelAnalisis {
   const barra = el<HTMLProgressElement>('barra-analisis');
   const porcentaje = el<HTMLSpanElement>('porcentaje-analisis');
   const estado = el<HTMLParagraphElement>('estado-analisis');
-  const editor = crearEditor(nombres);
+  const editor = crearEditor(partido);
 
   let fichero: File | null = null;
   let enCurso: AnalisisEnCurso | null = null;

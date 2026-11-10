@@ -10,13 +10,15 @@ import { iniciarFormulario } from './subida/formulario';
 
 el('version').textContent = __VERSION__;
 
-// El editor nombra a los equipos como se hayan escrito en el formulario.
+// El editor nombra a los equipos y a los ficheros que descarga con los datos del formulario.
 const campoLocal = el<HTMLInputElement>('campo-local');
 const campoVisitante = el<HTMLInputElement>('campo-visitante');
-const nombres = (): { local: string; visitante: string } => ({
-  local: campoLocal.value.trim() || 'Local',
-  visitante: campoVisitante.value.trim() || 'Visitante',
+const campoFecha = el<HTMLInputElement>('campo-fecha');
+const partido = (): { local: string; visitante: string; fecha: string } => ({
+  local: campoLocal.value,
+  visitante: campoVisitante.value,
+  fecha: campoFecha.value,
 });
 
-const analisis = iniciarPanelAnalisis(nombres);
+const analisis = iniciarPanelAnalisis(partido);
 iniciarFormulario({ alCambiarVideo: analisis.videoElegido });

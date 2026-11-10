@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
+import { BufferSource, Input, MP4 } from 'mediabunny';
 
 // analisis.mp4: silbato a los 20 s e imagen quieta hasta los 30 s. El análisis
 // da dos fragmentos, [0, 19,98) y [30, 60), y con ellos se abre el editor.
@@ -110,6 +112,23 @@ test('ver todo seguido se salta el balón parado', async ({ page }) => {
   // De 19 s a 19,98 s sigue el primer fragmento; luego salta de golpe a 30 s.
   await expect.poll(() => v.evaluate((x: HTMLVideoElement) => x.currentTime), { timeout: 15_000 }).toBeGreaterThan(30);
   await expect(page.locator('#lista-fragmentos .fragmento').nth(1)).toHaveAttribute('aria-current', 'true');
+});
+
+test('descargar un fragmento en MP4: se llama como el partido y dura lo que el fragmento', async ({ page }) => {
+  await page.getByLabel('Equipo local').fill('Atlético Benavente');
+  await page.getByLabel('Equipo visitante').fill('Peñíscola');
+  const llega = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Descargar MP4' }).click();
+  const descarga = await llega;
+  expect(descarga.suggestedFilename()).toMatch(/^atletico-benavente-peniscola-\d{4}-\d{2}-\d{2}-jugada-01-0m00s\.mp4$/);
+  // El MP4 descargado se lee aquí, en Node, con el mismo Mediabunny.
+  const entrada = new Input({ source: new BufferSource(new Uint8Array(readFileSync(await descarga.path())).buffer), formats: [MP4] });
+  const duracion = await entrada.computeDuration();
+  entrada.dispose();
+  // El primer fragmento va de 0 a 19,98 s; sin recodificar puede llevar un fotograma de más al final.
+  expect(duracion).toBeGreaterThanOrEqual(19.97);
+  expect(duracion).toBeLessThanOrEqual(20.1);
+  await expect(page.locator('#estado-editor')).toContainText('Descargado: atletico-benavente-peniscola-');
 });
 
 test('marcar el descanso y el inicio del partido', async ({ page }) => {

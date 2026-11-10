@@ -3,6 +3,8 @@ import type { ResultadoAnalisis } from '../../nucleo/analizar';
 import type { Intervalo } from '../../nucleo/balonParado/tramos';
 import type { Equipo } from '../../nucleo/fragmentos';
 import { textoEquipos, textoPartes, textoResumen, type Nombres } from '../analisis/resumen';
+import { crearDescargador } from '../descarga/accion';
+import type { DatosNombre } from '../descarga/nombre';
 import { el } from '../dom';
 import { accionDeTecla, esAccion, teclaAjena, type Accion } from './atajos';
 import { Historial } from './historial';
@@ -38,7 +40,12 @@ type AccionEditor = Accion | 'verTodo';
 const SALTO_SEG = 2;
 const SALTO_FINO_SEG = 0.2;
 
-export function crearEditor(nombres: () => Nombres): Editor {
+export function crearEditor(partido: () => DatosNombre): Editor {
+  // En pantalla, un equipo sin nombre es «Local» o «Visitante»; en el nombre del fichero, nada.
+  const nombres = (): Nombres => {
+    const p = partido();
+    return { local: p.local.trim() || 'Local', visitante: p.visitante.trim() || 'Visitante' };
+  };
   const contenedor = el<HTMLDivElement>('resultado-analisis');
   const resumen = el<HTMLParagraphElement>('resumen-analisis');
   const equipos = el<HTMLParagraphElement>('equipos-analisis');
@@ -51,12 +58,15 @@ export function crearEditor(nombres: () => Nombres): Editor {
   let seleccionado: string | null = null;
   /** El balon parado del analisis: hace falta para calcular fragmentos al alargar una parte. */
   let tramos: readonly Intervalo[] = [];
+  /** De donde se recortan las descargas: por ahora el fichero local; con la subida, R2. */
+  let origen: File | null = null;
 
   const actual = (): EstadoEditor | null => historial?.estado ?? null;
   const numero = (e: EstadoEditor, id: string): number => e.fragmentos.findIndex((f) => f.id === id) + 1;
   const avisar = (mensaje: string): void => {
     estadoTexto.textContent = mensaje;
   };
+  const descargar = crearDescargador(avisar);
 
   const linea = new LineaTiempo(el('linea-analisis'), (t) => {
     const e = actual();
@@ -177,6 +187,8 @@ export function crearEditor(nombres: () => Nombres): Editor {
         return reproductor.alternar();
       case 'verFragmento':
         return f ? reproductor.verFragmento(f) : undefined;
+      case 'descargar':
+        return f && origen ? void descargar(origen, f, numero(e, f.id), partido()) : undefined;
       case 'verTodo':
         return reproductor.verTodo(() => actual()?.fragmentos ?? []);
       case 'anterior':
@@ -236,6 +248,7 @@ export function crearEditor(nombres: () => Nombres): Editor {
     abrir: (d) => {
       historial = new Historial<EstadoEditor>({ duracion: d.duracion, partes: d.resultado.partes, fragmentos: d.resultado.fragmentos, correcciones: [] });
       tramos = d.resultado.tramos;
+      origen = d.fichero;
       seleccionado = d.resultado.fragmentos[0]?.id ?? null;
       reproductor.cargar(d.fichero);
       contenedor.hidden = false;
@@ -245,6 +258,7 @@ export function crearEditor(nombres: () => Nombres): Editor {
     cerrar: () => {
       historial = null;
       seleccionado = null;
+      origen = null;
       reproductor.soltar();
       contenedor.hidden = true;
     },
