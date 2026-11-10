@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const PUERTO = 4173;
+/** D1 y R2 locales de las pruebas, aparte de los de desarrollo (.wrangler/state). */
+const PERSISTENCIA = '.wrangler/e2e';
 
 // Las pruebas van contra la compilacion de produccion servida por `vite
 // preview`, que ejecuta el Worker en workerd: lo mismo que se despliega,
@@ -22,7 +24,14 @@ export default defineConfig({
     { name: 'movil', use: { ...devices['Pixel 7'] } },
   ],
   webServer: {
-    command: `npx vite build && npx vite preview --port ${PUERTO} --strictPort`,
+    // Cada vez desde cero: la base de datos vacia y con las migraciones de migrations/.
+    command: [
+      `rm -rf ${PERSISTENCIA}`,
+      `npx wrangler d1 migrations apply futsal-scout --local --persist-to ${PERSISTENCIA}`,
+      'npx vite build',
+      `npx vite preview --port ${PUERTO} --strictPort`,
+    ].join(' && '),
+    env: { PERSISTENCIA },
     url: `http://localhost:${PUERTO}/api/salud`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

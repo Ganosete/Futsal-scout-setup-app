@@ -20,7 +20,16 @@ function version(): string {
 export default defineConfig({
   // El plugin compila el Worker y los estaticos juntos, y en `vite dev` y
   // `vite preview` ejecuta el Worker en workerd, el mismo motor que en produccion.
-  plugins: [cloudflare({ viteEnvironment: { name: 'servidor' } })],
+  //
+  // D1 y R2 locales se guardan en .wrangler/state, como con wrangler. Las
+  // pruebas de Playwright usan otra carpeta (PERSISTENCIA) que vacian al
+  // empezar, para no mezclarse con lo que haya en desarrollo.
+  plugins: [
+    cloudflare({
+      viteEnvironment: { name: 'servidor' },
+      persistState: process.env.PERSISTENCIA ? { path: process.env.PERSISTENCIA } : true,
+    }),
+  ],
   define: {
     __VERSION__: JSON.stringify(version()),
   },

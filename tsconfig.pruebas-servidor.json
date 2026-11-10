@@ -1,0 +1,11 @@
+{
+  // Las pruebas del Worker: corren dentro de workerd, con los bindings de
+  // wrangler.jsonc y el modulo cloudflare:test. Sin DOM y sin Node, como el
+  // propio Worker.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/vitest-plugin/types"]
+  },
+  "include": ["tests/servidor", "src/servidor", "src/comun"]
+}

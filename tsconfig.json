@@ -1,6 +1,6 @@
 {
-  // Base comun y, ademas, la configuracion de las pruebas y de los ficheros de
-  // configuracion (Node). El cliente y el Worker la extienden con su propio
+  // Base comun y, ademas, la configuracion de las pruebas en Node y de los
+  // ficheros de configuracion. El cliente y el Worker la extienden con su propio
   // entorno: tsconfig.cliente.json (DOM) y tsconfig.servidor.json (workerd).
   //
   // Mismas opciones que futsal-tracking. `noUncheckedIndexedAccess` sigue
@@ -23,5 +23,7 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true
   },
-  "include": ["tests", "e2e", "src/comun", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"]
+  "include": ["tests", "e2e", "src/comun", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"],
+  // Las del Worker tienen su propio entorno: tsconfig.pruebas-servidor.json.
+  "exclude": ["tests/servidor"]
 }

@@ -14,8 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "tipos:worker": "wrangler types src/servidor/worker-configuration.d.ts",
-    "typecheck": "npm run tipos:worker && tsc -p tsconfig.nucleo.json && tsc -p tsconfig.cliente.json && tsc -p tsconfig.servidor.json && tsc -p tsconfig.json",
+    "tipos:worker": "wrangler types --strict-vars=false src/servidor/worker-configuration.d.ts",
+    "typecheck": "npm run tipos:worker && tsc -p tsconfig.nucleo.json && tsc -p tsconfig.cliente.json && tsc -p tsconfig.servidor.json && tsc -p tsconfig.pruebas-servidor.json && tsc -p tsconfig.json",
     "deploy": "npm run build && wrangler deploy",
     "videos:prueba": "bash tools/crear_videos_prueba.sh"
   },
@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.68.0",
+    "@cloudflare/vitest-plugin": "^1.6.1",
     "@playwright/test": "1.63.0",
     "@types/node": "^22.20.5",
     "typescript": "^7.0.2",

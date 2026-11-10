@@ -15,6 +15,33 @@
     // index.html en vez de llegar al Worker.
     "run_worker_first": ["/api/*"]
   },
+  // Los partidos (D1) y sus videos (R2). El bucket esta en la jurisdiccion
+  // de la UE: son videos de jugadores, a menudo menores.
+  "d1_databases": [
+    {
+      "binding": "BD",
+      "database_name": "futsal-scout",
+      "database_id": "876808ed-cd37-4c67-be3d-77b8d0e2786a",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "VIDEOS",
+      "bucket_name": "futsal-scout-videos",
+      "jurisdiction": "eu"
+    }
+  ],
+  "vars": {
+    // Cloudflare Access: el dominio del equipo (<equipo>.cloudflareaccess.com)
+    // y la etiqueta AUD de la aplicacion. No son secretos. Vacios, la API
+    // responde 503 fuera de localhost.
+    "ACCESS_EQUIPO": "",
+    "ACCESS_AUD": "",
+    // Cada parte de la subida: 50 MiB. R2 pide al menos 5 MiB (salvo la
+    // ultima) y el Worker no admite cuerpos de mas de 100 MB.
+    "TAMANO_PARTE_BYTES": 52428800
+  },
   "observability": {
     "enabled": true
   },
