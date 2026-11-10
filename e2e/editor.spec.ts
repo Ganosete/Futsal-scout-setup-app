@@ -1,35 +1,10 @@
 import { readFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
 import { BufferSource, Input, MP4 } from 'mediabunny';
-import { expect, subirYAnalizar, test } from './ayuda';
+import { buscar, expect, filas, subirYAnalizar, test } from './ayuda';
 
 // analisis.mp4: silbato a los 20 s e imagen quieta hasta los 30 s. El análisis
 // da dos fragmentos, [0, 19,98) y [30, 60), y con ellos se abre el editor.
-
-interface Fila {
-  desde: number;
-  hasta: number;
-  equipo: string;
-}
-
-async function filas(page: Page): Promise<Fila[]> {
-  return page.locator('#lista-fragmentos .fragmento').evaluateAll((li) =>
-    li.map((x) => {
-      const d = (x as HTMLElement).dataset;
-      return { desde: Number(d.desde), hasta: Number(d.hasta), equipo: d.equipo ?? '' };
-    }),
-  );
-}
-
-/** Lleva el vídeo a `t` y espera a que haya llegado. */
-async function buscar(page: Page, t: number): Promise<void> {
-  await page.locator('#video-editor').evaluate(async (v: HTMLVideoElement, segundos) => {
-    await new Promise<void>((listo) => {
-      v.addEventListener('seeked', () => listo(), { once: true });
-      v.currentTime = segundos;
-    });
-  }, t);
-}
 
 /** Los atajos van al documento; con el foco en un botón, Intro y Espacio son del botón. */
 async function pulsar(page: Page, tecla: string): Promise<void> {

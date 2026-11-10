@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
-import type { Browser, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { BufferSource, Input, MP4 } from 'mediabunny';
-import { EQUIPOS, esperarGuardado, esperarSubida, expect, subirYAnalizar, test } from './ayuda';
+import { abrirComoJugador, EQUIPOS, esperarGuardado, esperarSubida, expect, subirYAnalizar, test } from './ayuda';
 
 // El enlace para los jugadores: lo crea el entrenador y lo abre un jugador en
 // otro navegador, sin la sesion del entrenador.
@@ -16,19 +16,6 @@ async function subirYCrearEnlace(page: Page): Promise<string> {
   await expect(url).toHaveCount(1);
   await expect(page.locator('#lista-enlaces .enlace-detalle')).toContainText('Caduca el');
   return url.inputValue();
-}
-
-/** Un jugador: un navegador nuevo, sin la cookie del entrenador. */
-async function abrirComoJugador(browser: Browser, url: string): Promise<{ pagina: Page; errores: string[] }> {
-  const contexto = await browser.newContext({ locale: 'es-ES' });
-  const pagina = await contexto.newPage();
-  const errores: string[] = [];
-  pagina.on('console', (m) => {
-    if (m.type() === 'error') errores.push(m.text());
-  });
-  pagina.on('pageerror', (e) => errores.push(e.message));
-  await pagina.goto(url);
-  return { pagina, errores };
 }
 
 const equiposDe = (p: Page): Promise<string[]> =>
@@ -79,11 +66,14 @@ test('lo que corrige el entrenador lo ve el jugador al volver a abrir el enlace'
   const { pagina } = await abrirComoJugador(browser, url);
   await expect(pagina.locator('#bloque-jugadas')).toBeVisible({ timeout: 20_000 });
   expect(await equiposDe(pagina)).toEqual(['', '']);
+  // Sin equipos puestos y con una sola parte, no hay nada que filtrar.
+  await expect(pagina.locator('#filtros-jugadores .filtros-grupo')).toHaveCount(0);
   await page.locator('#lista-fragmentos .fragmento').nth(1).getByRole('button', { name: `Ataca ${EQUIPOS.visitante}` }).click();
   await esperarGuardado(page);
   await pagina.reload();
   await expect(pagina.locator('#bloque-jugadas')).toBeVisible({ timeout: 20_000 });
   expect(await equiposDe(pagina)).toEqual(['', 'visitante']);
+  await expect(pagina.getByRole('group', { name: 'Ver por equipo' })).toBeVisible();
 });
 
 test('quitado el enlace, el jugador ya no entra', async ({ page, browser }) => {

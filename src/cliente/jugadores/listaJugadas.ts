@@ -20,10 +20,12 @@ export class ListaJugadas {
     });
   }
 
-  pintar(p: PartidoCompartido, seleccionada: string | null): void {
+  /** Las que pasan el filtro, con su numero de la lista entera (el que llevan las descargas). */
+  pintar(p: PartidoCompartido, seleccionada: string | null, visible: (j: JugadaCompartida) => boolean = () => true): void {
     const porId = new Map<string, JugadaCompartida>(p.jugadas.map((j) => [j.id, j]));
+    const visibles = new Set(p.jugadas.filter(visible).map((j) => j.id));
     this.lista.replaceChildren(
-      ...filasFragmentos(p.jugadas).map((f) => {
+      ...filasFragmentos(p.jugadas).filter((f) => visibles.has(f.id)).map((f) => {
         const li = crear('li', `fragmento jugada equipo-${f.equipo ?? 'ninguno'}${f.id === seleccionada ? ' seleccionado' : ''}`);
         li.dataset.id = f.id;
         li.dataset.desde = f.desdeSeg.toFixed(2);

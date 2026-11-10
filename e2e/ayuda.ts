@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { test as base, expect, type Page } from '@playwright/test';
+import { test as base, expect, type Browser, type Page } from '@playwright/test';
 
 /**
  * Lo comun de las pruebas de la pagina. Cada prueba entra con su propio
@@ -43,4 +43,43 @@ export async function esperarGuardado(page: Page): Promise<void> {
 /** Espera a que el video este entero en el servidor: hasta entonces, recargar la pagina pregunta. */
 export async function esperarSubida(page: Page): Promise<void> {
   await expect(page.locator('#estado-subida-partido')).toHaveText(/Vídeo subido\.|Este vídeo ya estaba subido\./, { timeout: 30_000 });
+}
+
+export interface Fila {
+  desde: number;
+  hasta: number;
+  equipo: string;
+}
+
+/** Las filas que se ven en la lista del editor, con sus segundos y su equipo. */
+export async function filas(page: Page): Promise<Fila[]> {
+  return page.locator('#lista-fragmentos .fragmento').evaluateAll((li) =>
+    li.map((x) => {
+      const d = (x as HTMLElement).dataset;
+      return { desde: Number(d.desde), hasta: Number(d.hasta), equipo: d.equipo ?? '' };
+    }),
+  );
+}
+
+/** Lleva el vídeo del editor a `t` y espera a que haya llegado. */
+export async function buscar(page: Page, t: number): Promise<void> {
+  await page.locator('#video-editor').evaluate(async (v: HTMLVideoElement, segundos) => {
+    await new Promise<void>((listo) => {
+      v.addEventListener('seeked', () => listo(), { once: true });
+      v.currentTime = segundos;
+    });
+  }, t);
+}
+
+/** Un jugador: un navegador nuevo, sin la cookie del entrenador. */
+export async function abrirComoJugador(browser: Browser, url: string): Promise<{ pagina: Page; errores: string[] }> {
+  const contexto = await browser.newContext({ locale: 'es-ES' });
+  const pagina = await contexto.newPage();
+  const errores: string[] = [];
+  pagina.on('console', (m) => {
+    if (m.type() === 'error') errores.push(m.text());
+  });
+  pagina.on('pageerror', (e) => errores.push(e.message));
+  await pagina.goto(url);
+  return { pagina, errores };
 }

@@ -53,6 +53,11 @@
   outline-offset: -2px;
 }
 
+/* Lo que esconde el filtro: sigue en su sitio, pero apagado. */
+.linea-tramo.fuera-filtro {
+  opacity: 0.25;
+}
+
 /* Lo que no es partido (calentamiento, descanso), rayado para que no se confunda con balon parado. */
 .linea-fuera {
   background: repeating-linear-gradient(135deg, transparent 0 4px, var(--borde) 4px 6px);
@@ -241,4 +246,38 @@
   .fragmento-duracion {
     display: none;
   }
+}
+
+/* Ver solo un equipo o una parte (editor y pagina de los jugadores). */
+.filtros {
+  display: grid;
+  gap: 6px;
+}
+
+.filtros-grupos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.filtros-grupo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filtros-grupo .boton-mini[aria-pressed='true'] {
+  color: var(--sobre-acento);
+  background: var(--acento);
+  border-color: var(--acento);
+}
+
+.filtros-cuenta {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+.filtros-cuenta:empty {
+  display: none;
 }

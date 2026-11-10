@@ -33,10 +33,12 @@ export class ListaFragmentos {
     });
   }
 
-  pintar(fragmentos: readonly Fragmento[], seleccionado: string | null): void {
+  /** Las filas de los que pasan el filtro, con su numero de la lista entera (el que llevan las descargas). */
+  pintar(fragmentos: readonly Fragmento[], seleccionado: string | null, visible: (f: Fragmento) => boolean = () => true): void {
     const nombres = this.op.nombres();
+    const visibles = new Set(fragmentos.filter(visible).map((f) => f.id));
     this.lista.replaceChildren(
-      ...filasFragmentos(fragmentos).map((f) => {
+      ...filasFragmentos(fragmentos).filter((f) => visibles.has(f.id)).map((f) => {
         const li = crear('li', `fragmento equipo-${f.equipo ?? 'ninguno'}${f.id === seleccionado ? ' seleccionado' : ''}`);
         li.dataset.id = f.id;
         li.dataset.desde = f.desdeSeg.toFixed(2);

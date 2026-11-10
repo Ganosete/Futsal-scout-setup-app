@@ -1,7 +1,9 @@
+import { filtrar, pasaFiltro } from '../../comun/filtros';
 import { formatearDuracion } from '../../comun/formato';
 import type { Intervalo } from '../../nucleo/balonParado/tramos';
-import type { Equipo } from '../../nucleo/fragmentos';
+import type { Equipo, Fragmento } from '../../nucleo/fragmentos';
 import { textoEquipos, textoPartes, textoResumen, type Nombres } from '../analisis/resumen';
+import { BarraFiltros } from '../barraFiltros';
 import { crearDescargador } from '../descarga/accion';
 import type { DatosNombre } from '../descarga/nombre';
 import { el } from '../dom';
@@ -92,6 +94,18 @@ export function crearEditor(): Editor {
     nombres,
   });
   const panelPartes = new PanelPartes(el('partes-editor'), (numero, borde) => moverParte(numero, borde));
+  const filtros = new BarraFiltros(el('filtros-editor'), {
+    conSinEquipo: true,
+    alCambiar: () => {
+      // Si el elegido queda fuera del filtro, se pasa al primero que se ve.
+      const e = actual();
+      if (e && !visibles(e).some((f) => f.id === seleccionado)) seleccionado = visibles(e)[0]?.id ?? seleccionado;
+      pintar();
+    },
+  });
+  /** Cuantas partes habia la ultima vez que se pintaron los filtros: sin segunda parte no hay filtro de partes. */
+  let partesPintadas = 0;
+  const visibles = (e: EstadoEditor) => filtrar(e.fragmentos, filtros.filtro);
 
   function moverParte(numero: 1 | 2, borde: Borde): void {
     const e = actual();
@@ -116,9 +130,15 @@ export function crearEditor(): Editor {
     equipos.textContent = textoEquipos(e.fragmentos, nombres());
     partes.textContent = textoPartes(e.partes);
     panelPartes.pintar(e.partes);
-    linea.pintar(e, seleccionado);
+    const visible = (f: Fragmento): boolean => pasaFiltro(f, filtros.filtro);
+    linea.pintar(e, seleccionado, visible);
     linea.moverCabezal(reproductor.tiempo);
-    lista.pintar(e.fragmentos, seleccionado);
+    if (e.partes.length !== partesPintadas) {
+      partesPintadas = e.partes.length;
+      filtros.pintar(nombres(), e.partes.length > 1);
+    }
+    filtros.contar(visibles(e).length, e.fragmentos.length);
+    lista.pintar(e.fragmentos, seleccionado, visible);
     const equipo = e.fragmentos.find((f) => f.id === seleccionado)?.equipo ?? null;
     for (const b of barra.querySelectorAll<HTMLButtonElement>('button[data-accion]')) {
       const a = b.dataset.accion;
@@ -169,11 +189,15 @@ export function crearEditor(): Editor {
       case 'descargar':
         return f && origen ? void descargar(origen, f, numero(e, f.id), partido) : undefined;
       case 'verTodo':
-        return reproductor.verTodo(() => actual()?.fragmentos ?? []);
+        return reproductor.verTodo(() => {
+          const ahora = actual();
+          return ahora ? visibles(ahora) : [];
+        });
       case 'anterior':
       case 'siguiente': {
-        const i = e.fragmentos.findIndex((x) => x.id === seleccionado);
-        const destino = e.fragmentos[accion === 'anterior' ? Math.max(0, i - 1) : Math.min(e.fragmentos.length - 1, i + 1)];
+        const lista = visibles(e);
+        const i = lista.findIndex((x) => x.id === seleccionado);
+        const destino = lista[accion === 'anterior' ? Math.max(0, i - 1) : Math.min(lista.length - 1, i + 1)];
         return destino ? elegir(destino.id) : undefined;
       }
       case 'atras':
@@ -222,7 +246,7 @@ export function crearEditor(): Editor {
     const e = actual();
     if (!e || !reproductor.reproduciendo) return;
     const f = fragmentoEn(e, t);
-    if (f && f.id !== seleccionado) {
+    if (f && f.id !== seleccionado && pasaFiltro(f, filtros.filtro)) {
       seleccionado = f.id;
       pintar();
       lista.mostrar(f.id);
@@ -237,6 +261,8 @@ export function crearEditor(): Editor {
       partido = d.partido;
       alCambiar = d.alCambiar ?? (() => undefined);
       seleccionado = d.inicial.fragmentos[0]?.id ?? null;
+      filtros.reiniciar();
+      partesPintadas = 0;
       reproductor.cargar(d.origen);
       contenedor.hidden = false;
       avisar('');

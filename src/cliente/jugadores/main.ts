@@ -5,6 +5,8 @@ import '../estilos/campos.css';
 import '../estilos/editor.css';
 import '../estilos/jugadores.css';
 import type { JugadaCompartida, PartidoCompartido } from '../../comun/compartido';
+import { filtrar, pasaFiltro } from '../../comun/filtros';
+import { BarraFiltros } from '../barraFiltros';
 import { crearDescargador } from '../descarga/accion';
 import { el } from '../dom';
 import { Reproductor } from '../editor/reproductor';
@@ -35,12 +37,23 @@ const lista = new ListaJugadas(el('lista-jugadas'), (id) => {
   ver();
 });
 
-const jugadas = (): readonly JugadaCompartida[] => partido?.jugadas ?? [];
+const filtros = new BarraFiltros(el('filtros-jugadores'), {
+  conSinEquipo: false,
+  alCambiar: () => {
+    // Si la elegida queda fuera del filtro, se pasa a la primera que se ve.
+    if (!jugadas().some((j) => j.id === seleccionada)) seleccionada = jugadas()[0]?.id ?? seleccionada;
+    pintar();
+  },
+});
+
+/** Las que se ven con el filtro: son las que recorren «Anterior», «Siguiente» y «Ver todo seguido». */
+const jugadas = (): readonly JugadaCompartida[] => filtrar(partido?.jugadas ?? [], filtros.filtro);
 const actual = (): JugadaCompartida | undefined => jugadas().find((j) => j.id === seleccionada);
 
 function pintar(): void {
   if (!partido) return;
-  lista.pintar(partido, seleccionada);
+  filtros.contar(jugadas().length, partido.jugadas.length);
+  lista.pintar(partido, seleccionada, (j) => pasaFiltro(j, filtros.filtro));
   if (seleccionada) lista.mostrar(seleccionada);
 }
 
@@ -68,7 +81,7 @@ el('barra-jugadores').addEventListener('click', (e) => {
   else if (accion === 'verTodo') reproductor.verTodo(jugadas);
   else if (accion === 'descargar') {
     const j = actual();
-    if (j && partido && origen) void descargar(origen, j, jugadas().indexOf(j) + 1, partido);
+    if (j && partido && origen) void descargar(origen, j, partido.jugadas.indexOf(j) + 1, partido);
   }
 });
 
@@ -104,6 +117,7 @@ async function iniciar(): Promise<void> {
   estado.textContent = '';
   origen = urlVideoCompartido(token);
   seleccionada = partido.jugadas[0].id;
+  filtros.pintar(partido, partido.partes.length > 1, partido.jugadas.some((j) => j.equipo !== null));
   reproductor.cargar(origen);
   bloque.hidden = false;
   pintar();
