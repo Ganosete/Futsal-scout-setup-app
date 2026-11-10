@@ -1,0 +1,101 @@
+/* --- «Mis partidos» y la seccion de jugadas de un partido --- */
+
+.titulo-seccion {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.mis-partidos {
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.partidos {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.partido {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 0;
+}
+
+.partido + .partido {
+  border-top: 1px solid var(--borde);
+}
+
+.partido-datos {
+  min-width: 0;
+}
+
+.partido-titulo {
+  margin: 0;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.partido-detalle {
+  margin: 2px 0 0;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.partido-acciones {
+  display: flex;
+  gap: 8px;
+}
+
+/* Abierto: el que se esta viendo en «Jugadas». */
+.partido[aria-current='true'] .partido-titulo {
+  color: var(--acento);
+}
+
+.jugadas {
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.partido-abierto {
+  margin: 0;
+  color: var(--texto-suave);
+}
+
+.partido-abierto:empty {
+  display: none;
+}
+
+.progresos {
+  display: grid;
+  gap: 8px;
+}
+
+.progresos:not(:has(.progreso:not([hidden]))) {
+  display: none;
+}
+
+.progreso-nombre {
+  min-width: 4.5em;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.analisis-controles:not(:has(:not([hidden]))) {
+  display: none;
+}
+
+.estado-guardado {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+.estado-guardado:empty {
+  display: none;
+}

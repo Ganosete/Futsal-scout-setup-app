@@ -1,14 +1,9 @@
-import { fileURLToPath } from 'node:url';
-import { expect, test, type Page } from '@playwright/test';
+import { empezar, expect, fixture, subirYAnalizar, test } from './ayuda';
+import type { Page } from '@playwright/test';
 
-const fixture = (nombre: string): string => fileURLToPath(new URL(`../tests/fixtures/${nombre}`, import.meta.url));
-
-/** Elige el video, lanza el analisis y devuelve los fragmentos [desde, hasta] en segundos. */
+/** Sube y analiza el video y devuelve los fragmentos [desde, hasta] en segundos. */
 async function analizar(page: Page, nombre: string): Promise<[number, number][]> {
-  await page.goto('/');
-  await page.setInputFiles('#entrada-video', fixture(nombre));
-  await page.getByRole('button', { name: 'Buscar las jugadas' }).click();
-  await expect(page.locator('#resultado-analisis')).toBeVisible({ timeout: 60_000 });
+  await subirYAnalizar(page, nombre);
   return page
     .locator('#lista-fragmentos .fragmento')
     .evaluateAll((filas) => filas.map((f) => [Number((f as HTMLElement).dataset.desde), Number((f as HTMLElement).dataset.hasta)]));
@@ -45,14 +40,13 @@ test('sin sonido avisa de que se ha buscado sin el silbato', async ({ page }) =>
 });
 
 test('se puede parar y volver a empezar', async ({ page }) => {
-  await page.goto('/');
-  await page.setInputFiles('#entrada-video', fixture('analisis.mp4'));
-  await page.getByRole('button', { name: 'Buscar las jugadas' }).click();
+  await empezar(page, 'analisis.mp4');
   await page.getByRole('button', { name: 'Parar' }).click();
   await expect(page.locator('#estado-analisis')).toHaveText('Análisis parado.');
-  await expect(page.getByRole('button', { name: 'Buscar las jugadas' })).toBeVisible();
-  await page.getByRole('button', { name: 'Buscar las jugadas' }).click();
+  // Parado todo, se puede volver a pulsar: la subida sigue donde se quedó y el análisis empieza otra vez.
+  await page.getByRole('button', { name: 'Subir y analizar' }).click();
   await expect(page.locator('#resultado-analisis')).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator('#estado-subida-partido')).toHaveText(/Vídeo subido\.|Este vídeo ya estaba subido\./);
 });
 
 test('la sección de jugadas no sale con un vídeo que no se puede usar', async ({ page }) => {

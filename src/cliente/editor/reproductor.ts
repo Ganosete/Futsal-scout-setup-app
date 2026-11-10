@@ -31,9 +31,14 @@ export class Reproductor {
     video.addEventListener('seeked', vigilar);
   }
 
-  cargar(fichero: File): void {
+  /** El fichero local, o la direccion del video en el servidor (que se sirve por rangos). */
+  cargar(origen: File | URL): void {
     this.soltar();
-    this.url = URL.createObjectURL(fichero);
+    if (origen instanceof URL) {
+      this.video.src = origen.href;
+      return;
+    }
+    this.url = URL.createObjectURL(origen);
     this.video.src = this.url;
   }
 

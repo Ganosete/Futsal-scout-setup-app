@@ -1,11 +1,10 @@
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { BufferSource, Input, MP4 } from 'mediabunny';
+import { expect, subirYAnalizar, test } from './ayuda';
 
 // analisis.mp4: silbato a los 20 s e imagen quieta hasta los 30 s. El análisis
 // da dos fragmentos, [0, 19,98) y [30, 60), y con ellos se abre el editor.
-const video = fileURLToPath(new URL('../tests/fixtures/analisis.mp4', import.meta.url));
 
 interface Fila {
   desde: number;
@@ -39,10 +38,7 @@ async function pulsar(page: Page, tecla: string): Promise<void> {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
-  await page.setInputFiles('#entrada-video', video);
-  await page.getByRole('button', { name: 'Buscar las jugadas' }).click();
-  await expect(page.locator('#resultado-analisis')).toBeVisible({ timeout: 60_000 });
+  await subirYAnalizar(page, 'analisis.mp4');
 });
 
 test('se abre con el vídeo, la línea y los fragmentos, y el primero elegido', async ({ page }) => {
@@ -50,15 +46,15 @@ test('se abre con el vídeo, la línea y los fragmentos, y el primero elegido', 
   await expect(page.locator('#linea-analisis .linea-tramo')).toHaveCount(2);
   await expect(page.locator('#lista-fragmentos .fragmento')).toHaveCount(2);
   await expect(page.locator('#lista-fragmentos .fragmento').first()).toHaveAttribute('aria-current', 'true');
-  await expect(page.locator('#equipos-analisis')).toHaveText('Local: 0 · Visitante: 0 · Sin asignar: 2');
+  await expect(page.locator('#equipos-analisis')).toHaveText('Atlético Benavente: 0 · Peñíscola: 0 · Sin asignar: 2');
 });
 
 test('el equipo, con un clic en la fila o con L y V', async ({ page }) => {
-  await page.locator('#lista-fragmentos .fragmento').first().getByRole('button', { name: 'Ataca Local' }).click();
+  await page.locator('#lista-fragmentos .fragmento').first().getByRole('button', { name: 'Ataca Atlético Benavente' }).click();
   await pulsar(page, 'ArrowDown');
   await pulsar(page, 'v');
   expect((await filas(page)).map((f) => f.equipo)).toEqual(['local', 'visitante']);
-  await expect(page.locator('#equipos-analisis')).toHaveText('Local: 1 · Visitante: 1 · Sin asignar: 0');
+  await expect(page.locator('#equipos-analisis')).toHaveText('Atlético Benavente: 1 · Peñíscola: 1 · Sin asignar: 0');
   // Pulsar otra vez el mismo equipo lo quita.
   await pulsar(page, 'v');
   expect((await filas(page))[1].equipo).toBe('');
@@ -115,8 +111,6 @@ test('ver todo seguido se salta el balón parado', async ({ page }) => {
 });
 
 test('descargar un fragmento en MP4: se llama como el partido y dura lo que el fragmento', async ({ page }) => {
-  await page.getByLabel('Equipo local').fill('Atlético Benavente');
-  await page.getByLabel('Equipo visitante').fill('Peñíscola');
   const llega = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Descargar MP4' }).click();
   const descarga = await llega;

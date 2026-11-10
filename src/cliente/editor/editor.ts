@@ -1,5 +1,4 @@
 import { formatearDuracion } from '../../comun/formato';
-import type { ResultadoAnalisis } from '../../nucleo/analizar';
 import type { Intervalo } from '../../nucleo/balonParado/tramos';
 import type { Equipo } from '../../nucleo/fragmentos';
 import { textoEquipos, textoPartes, textoResumen, type Nombres } from '../analisis/resumen';
@@ -17,16 +16,21 @@ import { Reproductor } from './reproductor';
 
 /**
  * El editor de fragmentos: el video, la linea de tiempo, la lista y la barra
- * de acciones, con sus atajos. Guarda el estado en un historial para deshacer.
+ * de acciones, con sus atajos. Guarda el estado en un historial para deshacer
+ * y avisa de cada cambio (tambien al deshacer) para que se guarde fuera.
  *
- * Por ahora trabaja sobre el fichero local y en memoria; con la subida (1a)
- * el video vendra de R2 y las correcciones se guardaran en D1.
+ * El video es el fichero local si esta (recien elegido: va mas fluido) o el
+ * del servidor, que se pide por rangos.
  */
 
 export interface DatosEditor {
-  fichero: File;
-  resultado: ResultadoAnalisis;
-  duracion: number;
+  origen: File | URL;
+  inicial: EstadoEditor;
+  /** El balon parado del analisis: hace falta para calcular fragmentos al alargar una parte. */
+  tramos: readonly Intervalo[];
+  /** Los equipos y la fecha: nombran los botones y los ficheros que se descargan. */
+  partido: DatosNombre;
+  alCambiar?: (e: EstadoEditor) => void;
 }
 
 export interface Editor {
@@ -40,12 +44,10 @@ type AccionEditor = Accion | 'verTodo';
 const SALTO_SEG = 2;
 const SALTO_FINO_SEG = 0.2;
 
-export function crearEditor(partido: () => DatosNombre): Editor {
+export function crearEditor(): Editor {
+  let partido: DatosNombre = { local: '', visitante: '', fecha: '' };
   // En pantalla, un equipo sin nombre es «Local» o «Visitante»; en el nombre del fichero, nada.
-  const nombres = (): Nombres => {
-    const p = partido();
-    return { local: p.local.trim() || 'Local', visitante: p.visitante.trim() || 'Visitante' };
-  };
+  const nombres = (): Nombres => ({ local: partido.local.trim() || 'Local', visitante: partido.visitante.trim() || 'Visitante' });
   const contenedor = el<HTMLDivElement>('resultado-analisis');
   const resumen = el<HTMLParagraphElement>('resumen-analisis');
   const equipos = el<HTMLParagraphElement>('equipos-analisis');
@@ -56,10 +58,10 @@ export function crearEditor(partido: () => DatosNombre): Editor {
 
   let historial: Historial<EstadoEditor> | null = null;
   let seleccionado: string | null = null;
-  /** El balon parado del analisis: hace falta para calcular fragmentos al alargar una parte. */
   let tramos: readonly Intervalo[] = [];
-  /** De donde se recortan las descargas: por ahora el fichero local; con la subida, R2. */
-  let origen: File | null = null;
+  /** De donde se recortan las descargas: el fichero local o el video en R2. */
+  let origen: File | URL | null = null;
+  let alCambiar: (e: EstadoEditor) => void = () => undefined;
 
   const actual = (): EstadoEditor | null => historial?.estado ?? null;
   const numero = (e: EstadoEditor, id: string): number => e.fragmentos.findIndex((f) => f.id === id) + 1;
@@ -127,6 +129,7 @@ export function crearEditor(partido: () => DatosNombre): Editor {
     historial.hacer(nuevo);
     pintar();
     avisar(hecho(nuevo));
+    alCambiar(nuevo);
   }
 
   function elegir(id: string): void {
@@ -188,7 +191,7 @@ export function crearEditor(partido: () => DatosNombre): Editor {
       case 'verFragmento':
         return f ? reproductor.verFragmento(f) : undefined;
       case 'descargar':
-        return f && origen ? void descargar(origen, f, numero(e, f.id), partido()) : undefined;
+        return f && origen ? void descargar(origen, f, numero(e, f.id), partido) : undefined;
       case 'verTodo':
         return reproductor.verTodo(() => actual()?.fragmentos ?? []);
       case 'anterior':
@@ -211,6 +214,7 @@ export function crearEditor(partido: () => DatosNombre): Editor {
       case 'rehacer': {
         const hecho = accion === 'deshacer' ? historial.deshacer() : historial.rehacer();
         pintar();
+        if (hecho) alCambiar(historial.estado);
         return avisar(hecho ? (accion === 'deshacer' ? 'Deshecho.' : 'Rehecho.') : 'No hay nada que ' + accion + '.');
       }
       default:
@@ -246,11 +250,13 @@ export function crearEditor(partido: () => DatosNombre): Editor {
 
   return {
     abrir: (d) => {
-      historial = new Historial<EstadoEditor>({ duracion: d.duracion, partes: d.resultado.partes, fragmentos: d.resultado.fragmentos, correcciones: [] });
-      tramos = d.resultado.tramos;
-      origen = d.fichero;
-      seleccionado = d.resultado.fragmentos[0]?.id ?? null;
-      reproductor.cargar(d.fichero);
+      historial = new Historial<EstadoEditor>(d.inicial);
+      tramos = d.tramos;
+      origen = d.origen;
+      partido = d.partido;
+      alCambiar = d.alCambiar ?? (() => undefined);
+      seleccionado = d.inicial.fragmentos[0]?.id ?? null;
+      reproductor.cargar(d.origen);
       contenedor.hidden = false;
       avisar('');
       pintar();
@@ -259,6 +265,7 @@ export function crearEditor(partido: () => DatosNombre): Editor {
       historial = null;
       seleccionado = null;
       origen = null;
+      alCambiar = () => undefined;
       reproductor.soltar();
       contenedor.hidden = true;
     },

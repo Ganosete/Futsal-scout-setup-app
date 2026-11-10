@@ -1,5 +1,5 @@
 import { el } from '../dom';
-import { hoyLocal, validarDatosPartido, type Campo, type ProblemaCampo } from '../../comun/datosPartido';
+import { hoyLocal, validarDatosPartido, type Campo, type DatosPartido, type ProblemaCampo } from '../../comun/datosPartido';
 import type { LecturaVideo } from './metadatos';
 import { filasDatos } from './resumenVideo';
 import { hayErrores, ordenar, problemaDeLectura, validarFichero, validarMetadatos, type Problema } from './validacion';
@@ -7,35 +7,44 @@ import { pintarDatos, pintarProblemas } from './vistaVideo';
 
 /**
  * El formulario de «Nuevo partido»: elegir el video, comprobarlo en el
- * navegador y rellenar los datos del partido.
+ * navegador, rellenar los datos del partido y «Subir y analizar».
  *
- * En esta entrega no se sube nada: el boton sigue desactivado hasta que
- * llegue la subida (fase 1). `data-listo` en el formulario dice si, con lo que
- * hay, ya se podria subir; asi lo comprueba la prueba de Playwright sin
- * depender de los textos.
+ * `data-listo` en el formulario dice si, con lo que hay, ya se puede subir;
+ * asi lo comprueba la prueba de Playwright sin depender de los textos.
  */
 
 type EstadoVideo =
   | { tipo: 'ninguno' }
   | { tipo: 'leyendo'; fichero: File }
-  | { tipo: 'comprobado'; fichero: File; problemas: Problema[] };
+  | { tipo: 'comprobado'; fichero: File; problemas: Problema[]; duracion: number | null };
+
+export interface VideoValido {
+  fichero: File;
+  duracion: number;
+}
 
 const CAMPOS: readonly Campo[] = ['local', 'visitante', 'fecha'];
 
-function textoEstado(video: EstadoVideo, videoValido: boolean, listo: boolean): string {
+function textoEstado(video: EstadoVideo, videoValido: boolean, listo: boolean, ocupado: boolean): string {
   if (video.tipo === 'ninguno') return 'Elige el vídeo del partido.';
   if (video.tipo === 'leyendo') return 'Leyendo el vídeo…';
   if (!videoValido) return 'Este vídeo no se puede usar: mira lo marcado como error.';
   if (!listo) return 'El vídeo vale. Falta completar los datos del partido.';
-  return 'Todo listo. En cuanto llegue la subida, este botón la empezará.';
+  if (ocupado) return 'Hay un partido subiéndose: espera a que acabe, o páralo, antes de empezar otro.';
+  return 'Todo listo: pulsa «Subir y analizar».';
 }
 
 export interface OpcionesFormulario {
-  /** Cada video que se puede usar, o null en cuanto se elige otro (o uno que no vale). */
-  alCambiarVideo?: (fichero: File | null) => void;
+  /** «Subir y analizar» con un video que vale y los datos completos (sin espacios de sobra). */
+  alEnviar?: (video: VideoValido, datos: DatosPartido) => void;
 }
 
-export function iniciarFormulario(opciones: OpcionesFormulario = {}): void {
+export interface Formulario {
+  /** Mientras sube otro partido, no se puede empezar uno nuevo. */
+  bloquear: (ocupado: boolean) => void;
+}
+
+export function iniciarFormulario(opciones: OpcionesFormulario = {}): Formulario {
   const formulario = el<HTMLFormElement>('form-subida');
   const bloqueVideo = el<HTMLFieldSetElement>('bloque-video');
   const entrada = el<HTMLInputElement>('entrada-video');
@@ -45,6 +54,7 @@ export function iniciarFormulario(opciones: OpcionesFormulario = {}): void {
   const datos = el<HTMLDListElement>('datos-video');
   const problemas = el<HTMLUListElement>('problemas-video');
   const estado = el<HTMLParagraphElement>('estado-subida');
+  const boton = el<HTMLButtonElement>('btn-subir');
   const campos: Record<Campo, HTMLInputElement> = {
     local: el('campo-local'),
     visitante: el('campo-visitante'),
@@ -52,6 +62,7 @@ export function iniciarFormulario(opciones: OpcionesFormulario = {}): void {
   };
 
   let video: EstadoVideo = { tipo: 'ninguno' };
+  let ocupado = false;
   /** Cada eleccion tiene su turno: si se cambia de fichero a media lectura, la lectura vieja no pinta. */
   let turno = 0;
   /** Los mensajes de un campo solo salen cuando ya se ha pasado por el: no se rine antes de escribir. */
@@ -70,21 +81,22 @@ export function iniciarFormulario(opciones: OpcionesFormulario = {}): void {
     }
   }
 
-  function pintar(): void {
-    const deLosDatos = validarDatosPartido(
-      { local: campos.local.value, visitante: campos.visitante.value, fecha: campos.fecha.value },
-      hoyLocal(),
-    );
+  const datosPartido = (): DatosPartido => ({ local: campos.local.value.trim(), visitante: campos.visitante.value.trim(), fecha: campos.fecha.value });
+
+  /** El video y los datos si ya se puede subir; si no, null. */
+  function pintar(): VideoValido | null {
+    const deLosDatos = validarDatosPartido(datosPartido(), hoyLocal());
     pintarCampos(deLosDatos);
-    const videoValido = video.tipo === 'comprobado' && !hayErrores(video.problemas);
+    const videoValido = video.tipo === 'comprobado' && !hayErrores(video.problemas) && video.duracion !== null;
     const listo = videoValido && !deLosDatos.some((p) => p.gravedad === 'error');
     formulario.dataset.listo = listo ? 'si' : 'no';
-    estado.textContent = textoEstado(video, videoValido, listo);
+    boton.disabled = !listo || ocupado;
+    estado.textContent = textoEstado(video, videoValido, listo, ocupado);
+    return listo && video.tipo === 'comprobado' && video.duracion !== null ? { fichero: video.fichero, duracion: video.duracion } : null;
   }
 
   async function elegir(fichero: File): Promise<void> {
     const mio = ++turno;
-    opciones.alCambiarVideo?.(null);
     zona.hidden = true;
     ficha.hidden = false;
     nombre.textContent = fichero.name;
@@ -92,7 +104,7 @@ export function iniciarFormulario(opciones: OpcionesFormulario = {}): void {
 
     const previos = validarFichero({ nombre: fichero.name, tipo: fichero.type, tamano: fichero.size });
     if (hayErrores(previos)) {
-      video = { tipo: 'comprobado', fichero, problemas: ordenar(previos) };
+      video = { tipo: 'comprobado', fichero, problemas: ordenar(previos), duracion: null };
       pintarProblemas(problemas, video.problemas);
       pintar();
       return;
@@ -114,10 +126,10 @@ export function iniciarFormulario(opciones: OpcionesFormulario = {}): void {
 
     if (lectura.tipo === 'leido') pintarDatos(datos, filasDatos(lectura.metadatos, fichero.size));
     const encontrados = lectura.tipo === 'leido' ? validarMetadatos(lectura.metadatos) : [problemaDeLectura(lectura.motivo)];
-    video = { tipo: 'comprobado', fichero, problemas: ordenar([...previos, ...encontrados]) };
+    const duracion = lectura.tipo === 'leido' ? lectura.metadatos.duracionSeg : null;
+    video = { tipo: 'comprobado', fichero, problemas: ordenar([...previos, ...encontrados]), duracion };
     pintarProblemas(problemas, video.problemas);
     pintar();
-    if (!hayErrores(video.problemas)) opciones.alCambiarVideo?.(fichero);
   }
 
   entrada.addEventListener('change', () => {
@@ -158,8 +170,15 @@ export function iniciarFormulario(opciones: OpcionesFormulario = {}): void {
   formulario.addEventListener('submit', (e) => {
     e.preventDefault();
     for (const c of CAMPOS) tocados.add(c);
-    pintar();
+    const listo = pintar();
+    if (listo && !ocupado) opciones.alEnviar?.(listo, datosPartido());
   });
 
   pintar();
+  return {
+    bloquear: (si) => {
+      ocupado = si;
+      pintar();
+    },
+  };
 }

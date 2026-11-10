@@ -1,7 +1,5 @@
-import { fileURLToPath } from 'node:url';
-import { expect, test, type Page } from '@playwright/test';
-
-const fixture = (nombre: string): string => fileURLToPath(new URL(`../tests/fixtures/${nombre}`, import.meta.url));
+import type { Page } from '@playwright/test';
+import { expect, fixture, test } from './ayuda';
 
 async function elegirVideo(page: Page, nombre: string): Promise<void> {
   await page.setInputFiles('#entrada-video', fixture(nombre));
@@ -35,9 +33,8 @@ test('un vídeo normal enseña sus datos y, con los equipos, queda listo', async
   await page.getByLabel('Equipo local').fill('Castillo de Requena FS');
   await page.getByLabel('Equipo visitante').fill('Feme Castellón');
   await expect(formulario(page)).toHaveAttribute('data-listo', 'si');
-  await expect(estado(page)).toHaveText('Todo listo. En cuanto llegue la subida, este botón la empezará.');
-  // La subida aún no existe: el botón sigue desactivado aunque todo valga.
-  await expect(page.getByRole('button', { name: 'Subir y analizar' })).toBeDisabled();
+  await expect(estado(page)).toHaveText('Todo listo: pulsa «Subir y analizar».');
+  await expect(page.getByRole('button', { name: 'Subir y analizar' })).toBeEnabled();
 });
 
 test('con el moov al final se lee lo mismo', async ({ page }) => {

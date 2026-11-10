@@ -4,21 +4,46 @@ import './estilos/video.css';
 import './estilos/campos.css';
 import './estilos/analisis.css';
 import './estilos/editor.css';
-import { iniciarPanelAnalisis } from './analisis/panelAnalisis';
+import './estilos/partidos.css';
 import { el } from './dom';
-import { iniciarFormulario } from './subida/formulario';
+import { iniciarMisPartidos } from './partido/misPartidos';
+import { iniciarPanelPartido } from './partido/panelPartido';
+import { sePuedeAbrir } from './partido/textos';
+import { iniciarFormulario, type Formulario } from './subida/formulario';
 
 el('version').textContent = __VERSION__;
 
-// El editor nombra a los equipos y a los ficheros que descarga con los datos del formulario.
-const campoLocal = el<HTMLInputElement>('campo-local');
-const campoVisitante = el<HTMLInputElement>('campo-visitante');
-const campoFecha = el<HTMLInputElement>('campo-fecha');
-const partido = (): { local: string; visitante: string; fecha: string } => ({
-  local: campoLocal.value,
-  visitante: campoVisitante.value,
-  fecha: campoFecha.value,
+let formulario: Formulario | null = null;
+
+const panel = iniciarPanelPartido({
+  alCambiarPartidos: () => void misPartidos.recargar(),
+  alCambiarOcupado: (si) => {
+    formulario?.bloquear(si);
+    misPartidos.bloquear(si);
+  },
+  alAbrir: (id) => misPartidos.marcarAbierto(id),
 });
 
-const analisis = iniciarPanelAnalisis(partido);
-iniciarFormulario({ alCambiarVideo: analisis.videoElegido });
+const misPartidos = iniciarMisPartidos({
+  abrir: (p) => {
+    void panel.abrir(p);
+    el('bloque-analisis').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
+  alBorrar: (id) => panel.cerrarSiEs(id),
+});
+
+formulario = iniciarFormulario({
+  alEnviar: (video, datos) => void panel.subirYAnalizar(video, datos),
+});
+
+// Con un partido abierto, la direccion lo dice (#partido=...): recargar la pagina lo vuelve a abrir.
+const enLaDireccion = /^#partido=([\w-]+)$/.exec(location.hash)?.[1];
+void misPartidos.recargar().then((partidos) => {
+  const p = partidos.find((x) => x.id === enLaDireccion);
+  if (p && sePuedeAbrir(p)) void panel.abrir(p);
+});
+
+// Salir con una subida a medias o con cambios sin guardar: el navegador pregunta antes.
+window.addEventListener('beforeunload', (e) => {
+  if (panel.pendiente) e.preventDefault();
+});
