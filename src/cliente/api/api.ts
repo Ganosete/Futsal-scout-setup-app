@@ -1,51 +1,11 @@
 import type { Edicion } from '../../comun/edicion';
 import type { NuevoPartido, Partido, PartidoParaSubir } from '../../comun/partido';
 import type { SenalesAnalisis } from '../../nucleo/analizar';
+import { ErrorApi, pedir } from './peticion';
 
-/**
- * Las llamadas a la API del Worker. Cada fallo llega como ErrorApi, con el
- * estado HTTP (0 si no se ha llegado al servidor) y el mensaje que da el
- * propio servidor, que ya esta pensado para ensenarlo.
- */
+/** Las llamadas a la API del entrenador. Los fallos llegan como ErrorApi (peticion.ts). */
 
-export class ErrorApi extends Error {
-  constructor(
-    readonly estado: number,
-    mensaje: string,
-  ) {
-    super(mensaje);
-  }
-}
-
-export const SIN_CONEXION = 'No se puede hablar con el servidor: comprueba la conexión.';
-
-/** El mensaje de un error de la API a partir de su cuerpo (`{ error }`). */
-export function mensajeDeCuerpo(texto: string, estado: number): string {
-  try {
-    const cuerpo: unknown = JSON.parse(texto);
-    if (typeof cuerpo === 'object' && cuerpo !== null && typeof (cuerpo as { error?: unknown }).error === 'string') {
-      return (cuerpo as { error: string }).error;
-    }
-  } catch {
-    // Sin cuerpo JSON: la respuesta no es de la API (un proxy, Access pidiendo entrar).
-  }
-  return `El servidor ha respondido con un error (${estado}).`;
-}
-
-async function pedir(metodo: string, camino: string, cuerpo?: unknown, cabeceras: Record<string, string> = {}): Promise<Response> {
-  let r: Response;
-  try {
-    r = await fetch(camino, {
-      method: metodo,
-      headers: cuerpo === undefined ? cabeceras : { 'content-type': 'application/json', ...cabeceras },
-      body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
-    });
-  } catch {
-    throw new ErrorApi(0, SIN_CONEXION);
-  }
-  if (!r.ok) throw new ErrorApi(r.status, mensajeDeCuerpo(await r.text().catch(() => ''), r.status));
-  return r;
-}
+export { ErrorApi, SIN_CONEXION, mensajeDeCuerpo } from './peticion';
 
 const partido = (id: string): string => `/api/partidos/${encodeURIComponent(id)}`;
 

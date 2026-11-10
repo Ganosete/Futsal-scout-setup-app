@@ -13,7 +13,9 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
   X-Robots-Tag: noindex
 
-# Vite pone un hash en el nombre de cada fichero de /assets: si cambia el
-# contenido, cambia el nombre. Se pueden guardar para siempre.
-/assets/*
+# Vite pone un hash en el nombre de cada fichero de /v/recursos: si cambia el
+# contenido, cambia el nombre. Se pueden guardar para siempre. Van bajo /v/
+# porque la pagina de los jugadores tambien los carga, y /v/* es lo unico que
+# queda fuera de Cloudflare Access.
+/v/recursos/*
   Cache-Control: public, max-age=31536000, immutable

@@ -42,7 +42,8 @@ export interface FilaFragmento {
   equipo: Equipo | null;
 }
 
-export function filasFragmentos(fragmentos: readonly Fragmento[]): FilaFragmento[] {
+/** Vale para los fragmentos del editor y para las jugadas que ve un jugador, que no llevan `manual`. */
+export function filasFragmentos(fragmentos: readonly Pick<Fragmento, 'id' | 'desde' | 'hasta' | 'parte' | 'equipo'>[]): FilaFragmento[] {
   return fragmentos.map((f, i) => ({
     id: f.id,
     numero: i + 1,

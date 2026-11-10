@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Las jugadas del partido, para verlas y descargarlas." />
+    <!-- Cada enlace es privado: que no lo indexe nadie ni salga hacia otras webs. -->
+    <meta name="robots" content="noindex" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Jugadas · Futsal Scout</title>
+    <link rel="icon" href="/v/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="cabecera">
+      <span class="marca">
+        <svg class="marca-logo" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+          <rect width="32" height="32" rx="8" class="marca-fondo" />
+          <rect x="6.5" y="9" width="19" height="14" rx="1.5" class="marca-trazo" />
+          <line x1="16" y1="9" x2="16" y2="23" class="marca-trazo" />
+          <circle cx="16" cy="16" r="3" class="marca-trazo" />
+        </svg>
+        <span class="marca-nombre">Futsal Scout</span>
+      </span>
+    </header>
+
+    <main class="contenido">
+      <section class="intro">
+        <h1 id="titulo-compartido">Jugadas del partido</h1>
+        <p id="detalle-compartido"></p>
+      </section>
+      <p id="estado-compartido" class="estado" role="status" aria-live="polite">Cargando las jugadas…</p>
+
+      <section id="bloque-jugadas" class="tarjeta jugadas" aria-label="Jugadas del partido" hidden>
+        <video id="video-jugadores" class="video-editor" controls playsinline preload="metadata"></video>
+        <div id="barra-jugadores" class="barra-editor" role="toolbar" aria-label="Ver las jugadas">
+          <div class="grupo">
+            <button type="button" class="boton-mini" data-accion="anterior" title="Jugada anterior">↑ Anterior</button>
+            <button type="button" class="boton-mini" data-accion="verFragmento" title="Ver la jugada y pararse al final">Ver jugada</button>
+            <button type="button" class="boton-mini" data-accion="verTodo" title="Ver todas las jugadas seguidas, sin el balón parado">Ver todo seguido</button>
+            <button type="button" class="boton-mini" data-accion="siguiente" title="Jugada siguiente">Siguiente ↓</button>
+          </div>
+          <div class="grupo">
+            <button type="button" class="boton-mini" data-accion="descargar" title="Descargar la jugada en MP4, sin perder calidad">Descargar MP4</button>
+          </div>
+        </div>
+        <p id="estado-jugadas" class="estado-editor" role="status" aria-live="polite"></p>
+        <ol id="lista-jugadas" class="fragmentos" aria-label="Jugadas"></ol>
+      </section>
+    </main>
+
+    <footer class="pie">Futsal Scout</footer>
+    <script type="module" src="/src/cliente/jugadores/main.ts"></script>
+  </body>
+</html>

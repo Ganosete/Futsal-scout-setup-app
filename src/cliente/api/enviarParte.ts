@@ -1,4 +1,4 @@
-import { ErrorApi, SIN_CONEXION, mensajeDeCuerpo } from './api';
+import { ErrorApi, SIN_CONEXION, mensajeDeCuerpo } from './peticion';
 
 /**
  * Manda una parte del video con XMLHttpRequest y no con fetch: fetch no

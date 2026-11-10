@@ -13,8 +13,9 @@
     "not_found_handling": "single-page-application",
     // Sin esto, la regla anterior se comeria tambien /api/* y devolveria
     // index.html en vez de llegar al Worker. /v/* es lo de los jugadores (su
-    // pagina y su API); sus estaticos, en /v/recursos, no pasan por el Worker.
-    "run_worker_first": ["/api/*", "/v/*", "!/v/recursos/*"]
+    // pagina y su API); los estaticos de /v/ (recursos e icono) no pasan por
+    // el Worker.
+    "run_worker_first": ["/api/*", "/v/*", "!/v/recursos/*", "!/v/favicon.svg"]
   },
   // Los partidos (D1) y sus videos (R2). El bucket esta en la jurisdiccion
   // de la UE: son videos de jugadores, a menudo menores.

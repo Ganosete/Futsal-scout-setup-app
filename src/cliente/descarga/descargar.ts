@@ -1,4 +1,4 @@
-import type { Fragmento } from '../../nucleo/fragmentos';
+import type { Intervalo } from '../../nucleo/balonParado/tramos';
 import { guardarFichero } from './guardar';
 import { nombreClip, type DatosNombre } from './nombre';
 import { recortarMp4, type OrigenVideo } from './recorte';
@@ -15,7 +15,7 @@ export interface Descarga {
 
 export async function descargarFragmento(
   origen: OrigenVideo,
-  f: Fragmento,
+  f: Intervalo,
   numero: number,
   partido: DatosNombre,
   alAvanzar: (fraccion: number) => void,

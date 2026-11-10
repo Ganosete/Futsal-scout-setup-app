@@ -22,3 +22,15 @@ test('con la CSP puesta, leer un vídeo no provoca ningún error en la consola',
   await expect(page.locator('#datos-video')).toContainText('H.264');
   expect(errores).toEqual([]);
 });
+
+test('la página de los jugadores tampoco se indexa ni manda el enlace a otras webs', async ({ request }) => {
+  const r = await request.get('/v/AbCdEfGhIjKlMnOpQrSt-_');
+  expect(r.ok()).toBe(true);
+  const cabeceras = r.headers();
+  expect(cabeceras['content-type']).toContain('text/html');
+  expect(cabeceras['content-security-policy']).toContain("default-src 'self'");
+  expect(cabeceras['referrer-policy']).toBe('no-referrer');
+  expect(cabeceras['x-robots-tag']).toBe('noindex');
+  expect(cabeceras['cache-control']).toBe('no-store');
+  expect(await r.text()).toContain('/v/recursos/');
+});

@@ -1,0 +1,57 @@
+/* --- Pagina de los jugadores (/v/<token>) --- */
+
+.jugadas {
+  gap: 10px;
+}
+
+/* En el movil la lista es larga: que se desplace la pagina, no una caja dentro de ella. */
+.jugadas .fragmentos {
+  max-height: none;
+}
+
+/* La fila es el <li> (con el color del equipo a la izquierda) y dentro, un boton. */
+.fragmento.jugada {
+  display: block;
+  padding: 0;
+}
+
+.jugada-boton {
+  all: unset;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 3ch 6.5em 1fr auto minmax(0, 10em);
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.jugada-boton:focus-visible {
+  outline: 3px solid var(--anillo-foco);
+  outline-offset: -3px;
+}
+
+.jugada-equipo {
+  overflow: hidden;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 560px) {
+  .jugada-boton {
+    grid-template-columns: 3ch 1fr auto minmax(0, 7em);
+  }
+
+  .jugada-boton .fragmento-parte {
+    display: none;
+  }
+
+  .jugada-boton .fragmento-duracion {
+    display: inline;
+  }
+}

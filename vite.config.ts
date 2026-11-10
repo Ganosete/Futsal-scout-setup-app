@@ -35,10 +35,19 @@ export default defineConfig({
   },
   build: { target: 'es2022' },
   environments: {
-    // Los source maps del cliente se publicarian como un estatico mas y
-    // dejarian leer el codigo; los del Worker se suben a Cloudflare, que los
-    // guarda en privado para ensenar trazas de error legibles.
-    client: { build: { sourcemap: false } },
+    client: {
+      build: {
+        // Los source maps del cliente se publicarian como un estatico mas y
+        // dejarian leer el codigo; los del Worker se suben a Cloudflare, que
+        // los guarda en privado para ensenar trazas de error legibles.
+        sourcemap: false,
+        // Dos paginas: la del entrenador y la de los jugadores (/v/<token>).
+        // Sus ficheros van bajo /v/ para que la de los jugadores cargue sin
+        // sesion: /v/* es lo unico que queda fuera de Cloudflare Access.
+        assetsDir: 'v/recursos',
+        rolldownOptions: { input: { principal: 'index.html', jugadores: 'jugadores.html' } },
+      },
+    },
     servidor: { build: { sourcemap: true } },
   },
 });

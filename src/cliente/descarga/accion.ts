@@ -1,13 +1,13 @@
 import { formatearTamano } from '../../comun/formato';
-import type { Fragmento } from '../../nucleo/fragmentos';
+import type { Intervalo } from '../../nucleo/balonParado/tramos';
 import type { DatosNombre } from './nombre';
 import type { OrigenVideo } from './recorte';
 
 const PORCENTAJE = new Intl.NumberFormat('es-ES', { style: 'percent', maximumFractionDigits: 0 });
 
-export type Descargador = (origen: OrigenVideo, f: Fragmento, numero: number, partido: DatosNombre) => Promise<void>;
+export type Descargador = (origen: OrigenVideo, f: Intervalo, numero: number, partido: DatosNombre) => Promise<void>;
 
-/** El boton «Descargar MP4»: una descarga a la vez, con el progreso en el aviso del editor. */
+/** El boton «Descargar MP4»: una descarga a la vez, con el progreso en el aviso que se le pase. */
 export function crearDescargador(avisar: (mensaje: string) => void): Descargador {
   let ocupado = false;
   return async (origen, f, numero, partido) => {
