@@ -9,6 +9,7 @@ import { crearEditor } from '../editor/editor';
 import { Guardado, type EstadoGuardado } from '../editor/guardado';
 import { huellaFichero } from '../subida/huella';
 import { Barra } from './barra';
+import { crearCompartir } from './compartir';
 import { compactarSenales, edicionDeAnalisis, edicionDeEstado, estadoDeEdicion } from './conversion';
 import { subirVideo, type SubidaVideo } from './subidaVideo';
 import { fechaPartido, tituloPartido } from './textos';
@@ -65,6 +66,7 @@ export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
   const estadoAnalisis = el<HTMLParagraphElement>('estado-analisis');
   const estadoGuardado = el<HTMLParagraphElement>('estado-guardado');
   const editor = crearEditor();
+  const compartir = crearCompartir();
 
   let turno = 0;
   let abierto: string | null = null;
@@ -86,10 +88,12 @@ export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
     if (g) vaciando = g.guardarYa().finally(() => g.parar());
   }
 
-  function marcar(id: string | null): void {
+  function marcar(id: string | null, nombre = ''): void {
     abierto = id;
     if (id) history.replaceState(null, '', `#partido=${id}`);
     else if (location.hash) history.replaceState(null, '', location.pathname);
+    if (id) compartir.abrir(id, nombre);
+    else compartir.cerrar();
     o.alAbrir(id);
   }
 
@@ -215,7 +219,7 @@ export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
     if (mio !== turno) return;
     let finSubida: Promise<void> = Promise.resolve();
     if (p) {
-      marcar(p.partido.id);
+      marcar(p.partido.id, tituloPartido(datos));
       o.alCambiarPartidos();
       const subiendo = subirVideo(p, video.fichero, { barra: barraSubida, estado: estadoSubida });
       subida = subiendo;
@@ -235,7 +239,7 @@ export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
     const mio = empezar(p);
     await vaciando;
     if (mio !== turno) return;
-    marcar(p.id);
+    marcar(p.id, tituloPartido(p));
     estadoAnalisis.textContent = 'Abriendo el partido…';
     try {
       const g = await guardadas(p.id);

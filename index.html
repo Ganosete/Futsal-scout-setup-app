@@ -170,6 +170,24 @@
             I / F inicio y fin · P parte · U une · Supr quita · D descarga · Ctrl+Z deshace.
           </p>
         </div>
+        <section id="bloque-compartir" class="compartir" aria-labelledby="titulo-compartir" hidden>
+          <h3 id="titulo-compartir" class="titulo-subseccion">Compartir con los jugadores</h3>
+          <p class="nota">
+            Con el enlace, tus jugadores ven y descargan las jugadas sin cuenta. Quien lo tenga puede verlas:
+            mándalo solo al equipo. Si cambias algo, lo verán al volver a abrirlo.
+          </p>
+          <div class="compartir-crear">
+            <label for="caducidad-enlace">Caduca</label>
+            <select id="caducidad-enlace">
+              <option value="7">en 7 días</option>
+              <option value="30" selected>en 30 días</option>
+              <option value="">nunca</option>
+            </select>
+            <button id="btn-crear-enlace" type="button" class="boton boton-secundario">Crear enlace</button>
+          </div>
+          <ul id="lista-enlaces" class="enlaces"></ul>
+          <p id="estado-compartir" class="nota" role="status" aria-live="polite"></p>
+        </section>
       </section>
     </main>
 

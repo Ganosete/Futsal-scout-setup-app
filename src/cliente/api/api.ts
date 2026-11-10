@@ -1,3 +1,4 @@
+import type { Enlace } from '../../comun/compartido';
 import type { Edicion } from '../../comun/edicion';
 import type { NuevoPartido, Partido, PartidoParaSubir } from '../../comun/partido';
 import type { SenalesAnalisis } from '../../nucleo/analizar';
@@ -43,5 +44,14 @@ export const api = {
 
   guardarSenales: async (id: string, senales: SenalesAnalisis): Promise<void> => {
     await pedir('PUT', `${partido(id)}/senales`, senales);
+  },
+
+  listarEnlaces: async (id: string): Promise<Enlace[]> => ((await (await pedir('GET', `${partido(id)}/enlaces`)).json()) as { enlaces: Enlace[] }).enlaces,
+
+  /** `dias`: 7, 30 o null (no caduca). */
+  crearEnlace: async (id: string, dias: number | null): Promise<Enlace> => (await pedir('POST', `${partido(id)}/enlaces`, { dias })).json(),
+
+  quitarEnlace: async (id: string, token: string): Promise<void> => {
+    await pedir('DELETE', `${partido(id)}/enlaces/${encodeURIComponent(token)}`);
   },
 };

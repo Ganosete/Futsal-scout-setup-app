@@ -1,3 +1,4 @@
+import { haCaducado, type Enlace } from '../../comun/compartido';
 import { formatearDuracion, formatearTamano } from '../../comun/formato';
 import type { Partido } from '../../comun/partido';
 
@@ -32,4 +33,18 @@ export function detallePartido(p: Partido): string {
   }
   const jugadas = p.fragmentos === null ? 'sin jugadas todavía' : p.fragmentos === 1 ? '1 jugada' : `${p.fragmentos} jugadas`;
   return `${fechaPartido(p.fecha)} · ${formatearDuracion(p.duracion)} · ${jugadas}`;
+}
+
+/** La direccion que se manda a los jugadores. */
+export function urlEnlace(origen: string, token: string): string {
+  return `${origen}/v/${token}`;
+}
+
+/** «Caduca el 10 de diciembre de 2026 · 3 vistas». La zona horaria se puede fijar para probarlo. */
+export function detalleEnlace(e: Enlace, ahora: Date, zonaHoraria?: string): string {
+  const vistas = e.vistas === 1 ? '1 vista' : `${e.vistas} vistas`;
+  if (e.caduca === null) return `No caduca · ${vistas}`;
+  if (haCaducado(e, ahora)) return `Ha caducado: ya no funciona · ${vistas}`;
+  const dia = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: zonaHoraria });
+  return `Caduca el ${dia.format(new Date(e.caduca))} · ${vistas}`;
 }

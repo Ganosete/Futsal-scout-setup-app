@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detallePartido, fechaPartido, sePuedeAbrir, textoSubida, tituloPartido } from '../src/cliente/partido/textos';
+import { detalleEnlace, detallePartido, fechaPartido, sePuedeAbrir, textoSubida, tituloPartido, urlEnlace } from '../src/cliente/partido/textos';
 import type { Partido } from '../src/comun/partido';
 
 const P: Partido = {
@@ -51,5 +51,25 @@ describe('textos de los partidos', () => {
     expect(textoSubida(1536 * 1024 * 1024, 4 * 1024 ** 3)).toBe(
       'Subiendo el vídeo: 1,5 GB de 4,0 GB. Puedes revisar las jugadas mientras tanto.',
     );
+  });
+});
+
+describe('textos de los enlaces', () => {
+  const ENLACE = { token: 'AbCdEfGhIjKlMnOpQrSt-_', creado: '2026-11-10T09:00:00.000Z', caduca: '2026-12-10T09:00:00.000Z', vistas: 3 };
+  const AHORA = new Date('2026-11-12T10:00:00.000Z');
+
+  it('la direccion para los jugadores', () => {
+    expect(urlEnlace('https://futsal-scout.club.workers.dev', ENLACE.token)).toBe('https://futsal-scout.club.workers.dev/v/AbCdEfGhIjKlMnOpQrSt-_');
+  });
+
+  it('cuando caduca, en la hora de Espana, y cuantas veces se ha visto', () => {
+    expect(detalleEnlace(ENLACE, AHORA, 'Europe/Madrid')).toBe('Caduca el 10 de diciembre de 2026 · 3 vistas');
+    // A las 23:30 UTC del 9 ya es dia 10 en Madrid.
+    expect(detalleEnlace({ ...ENLACE, caduca: '2026-12-09T23:30:00.000Z', vistas: 1 }, AHORA, 'Europe/Madrid')).toBe('Caduca el 10 de diciembre de 2026 · 1 vista');
+  });
+
+  it('sin caducidad, o ya caducado', () => {
+    expect(detalleEnlace({ ...ENLACE, caduca: null, vistas: 0 }, AHORA)).toBe('No caduca · 0 vistas');
+    expect(detalleEnlace(ENLACE, new Date('2026-12-11T00:00:00.000Z'))).toBe('Ha caducado: ya no funciona · 3 vistas');
   });
 });

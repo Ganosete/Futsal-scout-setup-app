@@ -99,3 +99,87 @@
 .estado-guardado:empty {
   display: none;
 }
+
+/* --- «Compartir con los jugadores» --- */
+
+.compartir {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 16px;
+  border-top: 1px solid var(--borde);
+}
+
+.titulo-subseccion {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.compartir .nota {
+  margin: 0;
+}
+
+.compartir-crear {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.compartir-crear label {
+  font-weight: 600;
+}
+
+.compartir-crear select {
+  padding: 6px 10px;
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio);
+}
+
+.enlaces {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.enlaces:empty {
+  display: none;
+}
+
+.enlace {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--superficie-2);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.enlace-url {
+  width: 100%;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+}
+
+.enlace-detalle {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+.enlace-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
