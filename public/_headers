@@ -3,11 +3,13 @@
 #
 # La CSP es estricta a proposito: la pagina no carga codigo de nadie. `blob:`
 # en imagen, medio y workers es para los videos que el entrenador abre de su
-# disco y para el analisis en un worker de la fase 1.
+# disco y para el analisis en un worker de la fase 1. 'wasm-unsafe-eval' deja
+# compilar WebAssembly (el detector de equipos, onnxruntime-web), y nada mas:
+# no permite eval ni scripts en linea.
 #
 # X-Robots-Tag: noindex mientras la aplicacion este en desarrollo.
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; worker-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()

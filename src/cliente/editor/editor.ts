@@ -37,6 +37,11 @@ export interface Editor {
   abrir: (d: DatosEditor) => void;
   cerrar: () => void;
   readonly estado: EstadoEditor | null;
+  /**
+   * Un cambio que viene de fuera (los equipos del detector): entra en el
+   * historial como cualquier correccion, se deshace igual y se guarda igual.
+   */
+  cambiar: (transformar: (e: EstadoEditor) => EstadoEditor | null, hecho: (e: EstadoEditor) => string, imposible: string) => void;
 }
 
 type AccionEditor = Accion | 'verTodo';
@@ -271,6 +276,10 @@ export function crearEditor(): Editor {
     },
     get estado() {
       return actual();
+    },
+    cambiar: (transformar, hecho, imposible) => {
+      const e = actual();
+      if (e) aplicar(transformar(e), hecho, imposible);
     },
   };
 }

@@ -183,3 +183,55 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* --- «Quién ataca» --- */
+
+.pregunta-equipos {
+  margin: 0;
+  font-weight: 600;
+}
+
+.botones-colores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.boton-color {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio);
+  cursor: pointer;
+}
+
+.boton-color:hover {
+  border-color: var(--acento);
+}
+
+.boton-color[aria-pressed='true'] {
+  border-color: var(--acento);
+  box-shadow: 0 0 0 3px var(--anillo-foco);
+}
+
+/* El color lo pone el codigo en la propiedad --color (CSSOM: la CSP no deja estilos en linea). */
+.muestra-color {
+  width: 22px;
+  height: 22px;
+  background: var(--color, var(--sin-equipo));
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 6px;
+}
+
+.casilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}

@@ -170,6 +170,32 @@
             I / F inicio y fin · P parte · U une · Supr quita · D descarga · Ctrl+Z deshace.
           </p>
         </div>
+        <section id="bloque-equipos" class="compartir equipos" aria-labelledby="titulo-equipos" hidden>
+          <h3 id="titulo-equipos" class="titulo-subseccion">Quién ataca</h3>
+          <p class="nota">
+            Mira en cada fragmento qué jugador tiene el balón y, por el color de su camiseta, de qué equipo es. Lo hace
+            tu navegador: la primera vez descarga el detector (108 MB). Con tarjeta gráfica tarda unos minutos; sin ella,
+            mucho más. Lo que hayas puesto a mano no se toca.
+          </p>
+          <div class="analisis-controles">
+            <button id="btn-buscar-equipos" type="button" class="boton boton-secundario">Buscar quién ataca</button>
+            <button id="btn-parar-equipos" type="button" class="boton boton-secundario" hidden>Parar</button>
+          </div>
+          <div id="progreso-equipos" class="progreso" hidden>
+            <span class="progreso-nombre">Equipos</span>
+            <progress id="barra-equipos" max="1" value="0" aria-label="Progreso de la búsqueda de equipos"></progress>
+            <span id="porcentaje-equipos" class="porcentaje">0 %</span>
+          </div>
+          <p id="estado-equipos" class="estado-analisis" role="status" aria-live="polite"></p>
+          <div id="colores-equipos" class="colores-equipos" hidden>
+            <p id="pregunta-equipos" class="pregunta-equipos"></p>
+            <div class="botones-colores">
+              <button type="button" class="boton-color" data-grupo="0" aria-pressed="false"><span class="muestra-color"></span><span class="nombre-color"></span></button>
+              <button type="button" class="boton-color" data-grupo="1" aria-pressed="false"><span class="muestra-color"></span><span class="nombre-color"></span></button>
+            </div>
+            <label class="casilla"><input id="partir-posesion" type="checkbox" checked /> Partir los fragmentos donde cambia la posesión</label>
+          </div>
+        </section>
         <section id="bloque-compartir" class="compartir" aria-labelledby="titulo-compartir" hidden>
           <h3 id="titulo-compartir" class="titulo-subseccion">Compartir con los jugadores</h3>
           <p class="nota">

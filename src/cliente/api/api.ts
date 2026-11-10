@@ -2,6 +2,7 @@ import type { Enlace } from '../../comun/compartido';
 import type { Edicion } from '../../comun/edicion';
 import type { NuevoPartido, Partido, PartidoParaSubir } from '../../comun/partido';
 import type { SenalesAnalisis } from '../../nucleo/analizar';
+import type { RegistroFotograma } from '../../nucleo/equipos/registro';
 import { ErrorApi, pedir } from './peticion';
 
 /** Las llamadas a la API del entrenador. Los fallos llegan como ErrorApi (peticion.ts). */
@@ -44,6 +45,16 @@ export const api = {
 
   guardarSenales: async (id: string, senales: SenalesAnalisis): Promise<void> => {
     await pedir('PUT', `${partido(id)}/senales`, senales);
+  },
+
+  guardarDetecciones: async (id: string, detecciones: { version: 1; registros: RegistroFotograma[] }): Promise<void> => {
+    await pedir('PUT', `${partido(id)}/detecciones`, detecciones);
+  },
+
+  /** Lo que vio el detector la ultima vez, o null si en este partido aun no se ha buscado (204). */
+  leerDetecciones: async (id: string): Promise<unknown> => {
+    const r = await pedir('GET', `${partido(id)}/detecciones`);
+    return r.status === 204 ? null : r.json();
   },
 
   listarEnlaces: async (id: string): Promise<Enlace[]> => ((await (await pedir('GET', `${partido(id)}/enlaces`)).json()) as { enlaces: Enlace[] }).enlaces,
