@@ -1,3 +1,4 @@
+import type { Correccion, TipoCorreccion } from '../../comun/edicion';
 import type { Equipo, Fragmento } from '../../nucleo/fragmentos';
 import type { Parte } from '../../nucleo/partes';
 
@@ -10,15 +11,6 @@ import type { Parte } from '../../nucleo/partes';
  * cambio se apunta en `correcciones`, que es la verdad con la que se medira
  * el detector con partidos reales.
  */
-
-export type TipoCorreccion = 'equipo' | 'unir' | 'partir' | 'inicio' | 'fin' | 'quitar' | 'partes';
-
-export interface Correccion {
-  tipo: TipoCorreccion;
-  /** Los fragmentos afectados como estaban y como quedan. */
-  antes: readonly Fragmento[];
-  despues: readonly Fragmento[];
-}
 
 export interface EstadoEditor {
   duracion: number;

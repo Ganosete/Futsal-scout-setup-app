@@ -1,6 +1,7 @@
 import type { Identificador } from './acceso/identidad';
 import { origenPermitido } from './acceso/origen';
 import type { Contexto } from './contexto';
+import { guardar, guardarSenales, leer } from './partidos/edicion';
 import { borrar, crear, listar, ver } from './partidos/partidos';
 import { completar, subirParte } from './partidos/subida';
 import { video } from './partidos/video';
@@ -32,5 +33,8 @@ export function crearApi(identificar: Identificador): (peticion: Request, env: E
     { metodo: 'PUT', patron: '/api/partidos/:id/partes/:numero', manejar: privada(subirParte) },
     { metodo: 'POST', patron: '/api/partidos/:id/completar', manejar: privada(completar) },
     { metodo: 'GET', patron: '/api/partidos/:id/video', manejar: privada(video) },
+    { metodo: 'GET', patron: '/api/partidos/:id/edicion', manejar: privada(leer) },
+    { metodo: 'PUT', patron: '/api/partidos/:id/edicion', manejar: privada(guardar) },
+    { metodo: 'PUT', patron: '/api/partidos/:id/senales', manejar: privada(guardarSenales) },
   ]);
 }
