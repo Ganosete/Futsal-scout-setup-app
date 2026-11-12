@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { detalleEnlace, detallePartido, fechaPartido, sePuedeAbrir, textoSubida, tituloPartido, urlEnlace } from '../src/cliente/partido/textos';
+import { detalleEnlace, detallePartido, fechaPartido, sePuedeAbrir, textoBorrado, textoSubida, tituloPartido, urlEnlace } from '../src/cliente/partido/textos';
 import type { Partido } from '../src/comun/partido';
 
 const P: Partido = {
@@ -33,6 +33,11 @@ describe('textos de los partidos', () => {
     expect(detallePartido(P)).toBe('8 de noviembre de 2026 · 1:40:00 · 38 jugadas');
     expect(detallePartido({ ...P, fragmentos: 1 })).toContain('· 1 jugada');
     expect(detallePartido({ ...P, fragmentos: null, editado: null })).toContain('· sin jugadas todavía');
+  });
+
+  it('cuando lo borra la retencion del plan, si lo borra', () => {
+    expect(textoBorrado('2026-12-09T09:00:00.000Z', 'UTC')).toBe('Se borra el 9 de diciembre de 2026');
+    expect(textoBorrado(null)).toBeNull();
   });
 
   it('a medias: cuanto lleva y como seguir', () => {

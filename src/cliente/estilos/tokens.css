@@ -24,6 +24,8 @@
   --error-fondo: #fef3f2;
   --aviso: #8a5a00;
   --aviso-fondo: #fff8e1;
+  /* El medidor casi lleno: mas vivo que el texto de aviso y con 3:1 sobre la superficie. */
+  --medidor-aviso: #b26b00;
 
   /* Quien ataca en cada fragmento. Mas adelante, los colores de las camisetas. */
   --equipo-local: #d9480f;
@@ -56,6 +58,7 @@
     --error-fondo: #2c1515;
     --aviso: #f5c451;
     --aviso-fondo: #2b2410;
+    --medidor-aviso: #f5c451;
 
     /* Dentro de la banda de luminosidad del modo oscuro (OKLCH L 0,48-0,67), validado con el
        script de dataviz contra --superficie: los de antes, mas claros, se salian. */

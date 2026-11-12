@@ -21,9 +21,80 @@
         <span class="marca-nombre">Futsal Scout</span>
       </a>
       <span class="insignia">En desarrollo</span>
+      <div id="cuenta-cabecera" class="cuenta-cabecera" hidden>
+        <span id="email-cabecera" class="cuenta-email"></span>
+        <span id="plan-cabecera" class="insignia cuenta-plan" title="Tu plan"></span>
+        <button id="btn-mi-cuenta" type="button" class="boton-mini" aria-expanded="false" aria-controls="bloque-cuenta">Mi cuenta</button>
+        <button id="btn-salir" type="button" class="boton-mini">Salir</button>
+      </div>
     </header>
 
     <main class="contenido">
+      <section id="bloque-entrar" class="tarjeta entrar" aria-labelledby="titulo-entrar" hidden>
+        <div>
+          <h2 id="titulo-entrar" class="titulo-entrar">Entra en Futsal Scout</h2>
+          <p id="intro-entrar" class="nota"></p>
+        </div>
+        <form id="form-email" class="entrar-paso" novalidate>
+          <div class="campo">
+            <label for="campo-email">Tu email</label>
+            <input id="campo-email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="254" required />
+          </div>
+          <button type="submit" class="boton boton-principal">Enviarme el código</button>
+        </form>
+        <form id="form-codigo" class="entrar-paso" novalidate hidden>
+          <p id="texto-codigo" class="nota"></p>
+          <div class="campo campo-codigo">
+            <label for="campo-codigo">Código</label>
+            <input id="campo-codigo" name="codigo" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="7" required />
+          </div>
+          <button type="submit" class="boton boton-principal">Entrar</button>
+          <div class="entrar-otras">
+            <button id="btn-otro-codigo" type="button" class="boton-mini">Mandarme otro código</button>
+            <button id="btn-otro-email" type="button" class="boton-mini">Usar otro email</button>
+          </div>
+        </form>
+        <p id="estado-entrar" class="estado" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="bloque-cuenta" class="tarjeta cuenta" aria-labelledby="titulo-cuenta" hidden>
+        <div class="cuenta-cabeza">
+          <div>
+            <h2 id="titulo-cuenta" class="titulo-seccion" tabindex="-1">Mi cuenta</h2>
+            <p id="resumen-cuenta" class="nota"></p>
+          </div>
+          <button id="btn-cerrar-cuenta" type="button" class="boton-mini" aria-label="Cerrar «Mi cuenta»">Cerrar</button>
+        </div>
+        <div class="cuenta-parte">
+          <h3 class="titulo-subseccion">Lo que usas</h3>
+          <div id="medidas-cuenta" class="medidas"></div>
+        </div>
+        <div class="cuenta-parte">
+          <h3 class="titulo-subseccion">Planes</h3>
+          <p class="nota">Es una maqueta: cambiar de plan no cobra nada ni pide datos de pago.</p>
+          <ul id="planes" class="planes"></ul>
+        </div>
+        <div id="pago-maqueta" class="pago" hidden>
+          <h3 id="titulo-pago" class="titulo-subseccion" tabindex="-1"></h3>
+          <p class="pago-aviso">Maqueta: no se cobra nada.</p>
+          <dl class="pago-datos">
+            <div>
+              <dt>Precio</dt>
+              <dd id="precio-pago"></dd>
+            </div>
+            <div>
+              <dt>Lo que ya tienes</dt>
+              <dd id="efecto-pago"></dd>
+            </div>
+          </dl>
+          <div class="pago-acciones">
+            <button id="btn-confirmar-plan" type="button" class="boton boton-principal">Confirmar el cambio</button>
+            <button id="btn-cancelar-plan" type="button" class="boton boton-secundario">Cancelar</button>
+          </div>
+        </div>
+        <p id="estado-cuenta" class="estado" role="status" aria-live="polite"></p>
+      </section>
+
       <section id="bloque-mis-partidos" class="tarjeta mis-partidos" aria-labelledby="titulo-mis-partidos" hidden>
         <h2 id="titulo-mis-partidos" class="titulo-seccion">Mis partidos</h2>
         <ul id="lista-partidos" class="partidos"></ul>

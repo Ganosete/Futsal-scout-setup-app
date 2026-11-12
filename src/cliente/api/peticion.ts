@@ -29,6 +29,13 @@ export function mensajeDeCuerpo(texto: string, estado: number): string {
   return `El servidor ha respondido con un error (${estado}).`;
 }
 
+let alPerderla: (() => void) | null = null;
+
+/** Quien quiere saber que la sesion se ha cerrado a mitad (un 401): la pagina del entrenador. */
+export function alPerderLaSesion(hacer: () => void): void {
+  alPerderla = hacer;
+}
+
 export async function pedir(metodo: string, camino: string, cuerpo?: unknown, cabeceras: Record<string, string> = {}): Promise<Response> {
   let r: Response;
   try {
@@ -40,6 +47,7 @@ export async function pedir(metodo: string, camino: string, cuerpo?: unknown, ca
   } catch {
     throw new ErrorApi(0, SIN_CONEXION);
   }
+  if (r.status === 401) alPerderla?.();
   if (!r.ok) throw new ErrorApi(r.status, mensajeDeCuerpo(await r.text().catch(() => ''), r.status));
   return r;
 }

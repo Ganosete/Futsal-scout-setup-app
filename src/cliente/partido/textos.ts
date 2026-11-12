@@ -35,6 +35,13 @@ export function detallePartido(p: Partido): string {
   return `${fechaPartido(p.fecha)} · ${formatearDuracion(p.duracion)} · ${jugadas}`;
 }
 
+/** Lo que borra la retencion del plan (comun/planes.ts); null si no se borra. */
+export function textoBorrado(seBorra: string | null, zonaHoraria?: string): string | null {
+  if (seBorra === null) return null;
+  const dia = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: zonaHoraria });
+  return `Se borra el ${dia.format(new Date(seBorra))}`;
+}
+
 /** La direccion que se manda a los jugadores. */
 export function urlEnlace(origen: string, token: string): string {
   return `${origen}/v/${token}`;

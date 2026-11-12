@@ -1,17 +1,35 @@
 import type { Enlace } from '../../comun/compartido';
+import type { Cuenta } from '../../comun/cuenta';
 import type { Edicion } from '../../comun/edicion';
 import type { NuevoPartido, Partido, PartidoParaSubir } from '../../comun/partido';
+import type { IdPlan } from '../../comun/planes';
 import type { SenalesAnalisis } from '../../nucleo/analizar';
 import type { RegistroFotograma } from '../../nucleo/equipos/registro';
 import { ErrorApi, pedir } from './peticion';
 
 /** Las llamadas a la API del entrenador. Los fallos llegan como ErrorApi (peticion.ts). */
 
-export { ErrorApi, SIN_CONEXION, mensajeDeCuerpo } from './peticion';
+export { alPerderLaSesion, ErrorApi, SIN_CONEXION, mensajeDeCuerpo } from './peticion';
 
 const partido = (id: string): string => `/api/partidos/${encodeURIComponent(id)}`;
 
 export const api = {
+  /** En localhost no hay correo: el codigo vuelve en la respuesta. */
+  pedirCodigo: async (email: string): Promise<{ enviado: true; codigoLocal?: string }> => (await pedir('POST', '/api/entrar/codigo', { email })).json(),
+
+  entrar: async (email: string, codigo: string): Promise<void> => {
+    await pedir('POST', '/api/entrar', { email, codigo });
+  },
+
+  salir: async (): Promise<void> => {
+    await pedir('POST', '/api/salir');
+  },
+
+  verCuenta: async (): Promise<Cuenta> => (await pedir('GET', '/api/cuenta')).json(),
+
+  /** Maqueta de pago: el servidor cambia el plan sin cobrar nada. */
+  cambiarPlan: async (plan: IdPlan): Promise<Cuenta> => (await pedir('PUT', '/api/cuenta/plan', { plan })).json(),
+
   crearPartido: async (datos: NuevoPartido): Promise<PartidoParaSubir> => (await pedir('POST', '/api/partidos', datos)).json(),
 
   listarPartidos: async (): Promise<Partido[]> => ((await (await pedir('GET', '/api/partidos')).json()) as { partidos: Partido[] }).partidos,

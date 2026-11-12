@@ -1,12 +1,12 @@
 import type { Partido } from '../../comun/partido';
 import { api, ErrorApi } from '../api/api';
 import { crear, el } from '../dom';
-import { detallePartido, sePuedeAbrir, tituloPartido } from './textos';
+import { detallePartido, sePuedeAbrir, textoBorrado, tituloPartido } from './textos';
 
 /**
  * «Mis partidos»: los partidos subidos, para volver a abrirlos o borrarlos.
- * Sin partidos (o sin servidor, como al abrir la pagina sin Access) la
- * seccion no sale: lo primero es el formulario de «Nuevo partido».
+ * Sin partidos (o sin servidor) la seccion no sale: lo primero es el
+ * formulario de «Nuevo partido».
  */
 
 export interface OpcionesMisPartidos {
@@ -43,6 +43,8 @@ export function iniciarMisPartidos(o: OpcionesMisPartidos): MisPartidos {
         if (p.id === abierto) li.setAttribute('aria-current', 'true');
         const datos = crear('div', 'partido-datos');
         datos.append(crear('p', 'partido-titulo', tituloPartido(p)), crear('p', 'partido-detalle', detallePartido(p)));
+        const borrado = textoBorrado(p.seBorra);
+        if (borrado) datos.append(crear('p', 'partido-borrado', borrado));
         const acciones = crear('div', 'partido-acciones');
         const nombre = tituloPartido(p);
         if (sePuedeAbrir(p)) {
@@ -74,7 +76,7 @@ export function iniciarMisPartidos(o: OpcionesMisPartidos): MisPartidos {
       estado.textContent = '';
     } catch (e) {
       if (mio !== turno) return partidos;
-      // Sin Access configurado o sin conexion: no hay lista que ensenar, pero el formulario sigue sirviendo.
+      // Sin sesion (sale la pantalla de entrar) no hay lista que ensenar.
       if (e instanceof ErrorApi && (e.estado === 503 || e.estado === 401)) partidos = [];
       else estado.textContent = `No se ha podido cargar la lista: ${e instanceof Error ? e.message : ''}`;
     }
