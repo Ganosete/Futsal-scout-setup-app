@@ -160,3 +160,19 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
   otra vez con partidos de sala antes de cambiar nada en `nucleo/equipos/color.ts`.
 - **Filtrar no cambia los fragmentos** (`comun/filtros.ts`): solo cuáles se enseñan y cuáles se
   recorren. Cada fila lleva su número de la lista entera, que es el de las descargas.
+- **La pista marcada va normalizada a [0,1] sobre el fotograma que enseña el `<video>`**
+  (`nucleo/pista/calibracion.ts`): es el mismo espacio que el de las detecciones guardadas (el
+  `displayWidth` × `displayHeight` de Mediabunny), así que se pasa a píxeles con `videoWidth` y
+  `videoHeight`. Va en el estado del editor (se guarda y se deshace), pero no es una corrección.
+- **A 3 fotogramas por segundo no vale tal cual todo lo de futsal-tracking, que mira a 20.** Para
+  los toques (`nucleo/equipos/porToques.ts`) la trayectoria va sin suavizar ni interpolar, y la
+  ventana de la velocidad abarca un fotograma a cada lado: el retraso del Kalman al arrancar un
+  pase parecía un toque del rival junto al que pasaba. El balón fuera sí usa la trayectoria normal.
+- **Un saque tiene que verse** (`nucleo/balonParado/porBalon.ts`): el balón quieto en la línea que
+  arranca a más de 3 m/s. Si no se ve, la salida no se quita. Las detecciones que se inventen en
+  las pruebas tienen que respetarlo.
+- **Un tsconfig con `extends` hereda el `exclude` del padre**: si tiene su propio `include`, necesita
+  `"exclude": []`. Sin eso, `tsconfig.pruebas-servidor.json` no miraba ni un fichero de
+  `tests/servidor`.
+- **Las clases del detector van en el manifiesto** (`comun/modelos.ts`): pasar al detector afinado
+  es cambiar `DETECTOR` (fichero, tamaño, SHA-256, versión, entrada y clases), no el código.

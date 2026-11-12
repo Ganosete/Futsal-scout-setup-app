@@ -10,3 +10,6 @@ src/servidor/worker-configuration.d.ts
 # Salidas de Playwright.
 test-results/
 playwright-report/
+
+# Python de tools/
+__pycache__/
