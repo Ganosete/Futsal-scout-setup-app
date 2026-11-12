@@ -14,6 +14,17 @@ const BIEN: Edicion = {
   fragmentos: [F1, F2],
   correcciones: [{ tipo: 'equipo', antes: [{ ...F2, equipo: null, manual: false }], despues: [F2] }],
   tramos: [{ desde: 19.98, hasta: 30 }],
+  pista: null,
+};
+
+const PISTA = {
+  esquinas: [
+    { x: 0.1, y: 0.9 },
+    { x: 0.9, y: 0.9 },
+    { x: 0.75, y: 0.3 },
+    { x: 0.25, y: 0.3 },
+  ],
+  medidas: { largo: 40, ancho: 20 },
 };
 
 describe('leerEdicion', () => {
@@ -48,6 +59,23 @@ describe('leerEdicion', () => {
 
   it('una correccion de un tipo que no existe no vale', () => {
     expect(leerEdicion({ ...BIEN, correcciones: [{ tipo: 'borrar-todo', antes: [], despues: [] }] })).toBeNull();
+  });
+
+  it('una edicion de antes, sin pista, se lee con la pista a null', () => {
+    const { pista: _, ...sinPista } = BIEN;
+    expect(leerEdicion(sinPista)).toEqual(BIEN);
+  });
+
+  it('la pista marcada se lee entera, sin lo que no conoce', () => {
+    const conPista = { ...BIEN, pista: { ...PISTA, color: 'rojo' } };
+    expect(leerEdicion(conPista)?.pista).toEqual(PISTA);
+  });
+
+  it('una pista con esquinas fuera del fotograma, que no son cuatro o con medidas imposibles no vale', () => {
+    expect(leerEdicion({ ...BIEN, pista: { ...PISTA, esquinas: [{ x: 1.2, y: 0.9 }, ...PISTA.esquinas.slice(1)] } })).toBeNull();
+    expect(leerEdicion({ ...BIEN, pista: { ...PISTA, esquinas: PISTA.esquinas.slice(0, 3) } })).toBeNull();
+    expect(leerEdicion({ ...BIEN, pista: { ...PISTA, medidas: { largo: 20, ancho: 40 } } })).toBeNull();
+    expect(leerEdicion({ ...BIEN, pista: 'si' })).toBeNull();
   });
 
   it('otra version, o lo que no es una edicion, da null', () => {

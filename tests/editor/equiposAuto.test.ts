@@ -7,7 +7,7 @@ import type { Fragmento } from '../../src/nucleo/fragmentos';
 const f = (id: string, desde: number, hasta: number, extra: Partial<Fragmento> = {}): Fragmento => ({ id, desde, hasta, parte: 1, equipo: null, manual: false, ...extra });
 
 function estado(...fragmentos: Fragmento[]): EstadoEditor {
-  return { duracion: 100, partes: [{ numero: 1, desde: 0, hasta: 100 }], fragmentos, correcciones: [] };
+  return { duracion: 100, partes: [{ numero: 1, desde: 0, hasta: 100 }], fragmentos, correcciones: [], pista: null };
 }
 
 /** Un voto cada medio segundo de `desde` a `hasta`. */

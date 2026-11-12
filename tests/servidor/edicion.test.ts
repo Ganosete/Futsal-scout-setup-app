@@ -13,6 +13,7 @@ const EDICION: Edicion = {
   ],
   correcciones: [],
   tramos: [{ desde: 19.98, hasta: 30 }],
+  pista: null,
 };
 
 async function partido() {

@@ -31,6 +31,7 @@ function estado(): EstadoEditor {
     ],
     fragmentos: [frag('a', 0, 20), frag('b', 30, 60), frag('c', 70, 100), frag('d', 200, 280, 2)],
     correcciones: [],
+    pista: null,
   };
 }
 

@@ -235,3 +235,51 @@
   gap: 8px;
   font-size: 0.9rem;
 }
+
+/* «La pista», dentro de «Quién ataca». */
+.pista {
+  display: grid;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie-2);
+}
+
+.pista[open] {
+  padding-bottom: 14px;
+}
+
+.pista summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.resumen-pista {
+  color: var(--texto-suave);
+  font-weight: 400;
+}
+
+.pista-controles,
+.pista-medidas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.pista-medidas label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.pista-medidas input {
+  width: 5.5em;
+  padding: 4px 6px;
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 6px;
+}

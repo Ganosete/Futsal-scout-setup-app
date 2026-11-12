@@ -8,6 +8,48 @@
   border-radius: var(--radio);
 }
 
+/* El marco deja poner encima la pista marcada (cliente/pista/panelPista.ts). */
+.marco-video {
+  position: relative;
+}
+
+/* Su sitio y su tamano los pone el codigo (CSSOM): justo encima del fotograma, sin las bandas. */
+.capa-pista {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.capa-pista.visible {
+  display: block;
+}
+
+.capa-pista.marcando {
+  pointer-events: auto;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.pista-contorno {
+  fill: rgb(255 255 255 / 0.08);
+  stroke: var(--acento);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.pista-banda {
+  stroke: var(--acento);
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.pista-clic {
+  fill: var(--acento);
+  stroke: #fff;
+  stroke-width: 2;
+}
+
 /* La linea del partido entero: fragmentos del color de quien ataca. */
 .linea {
   position: relative;

@@ -14,6 +14,7 @@ const EDICION: Edicion = {
   ],
   correcciones: [{ tipo: 'equipo', antes: [], despues: [] }],
   tramos: [{ desde: 19.98, hasta: 30 }],
+  pista: null,
 };
 
 /** Un jugador: sin cookie de pruebas y desde fuera de localhost, como en produccion sin sesion de Access. */

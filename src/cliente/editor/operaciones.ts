@@ -1,6 +1,7 @@
 import type { Correccion, TipoCorreccion } from '../../comun/edicion';
 import type { Equipo, Fragmento } from '../../nucleo/fragmentos';
 import type { Parte } from '../../nucleo/partes';
+import type { Calibracion } from '../../nucleo/pista/calibracion';
 
 /**
  * Las correcciones del entrenador sobre los fragmentos. Puras: cada una
@@ -18,6 +19,8 @@ export interface EstadoEditor {
   /** Ordenados por inicio y sin solaparse. */
   fragmentos: readonly Fragmento[];
   correcciones: readonly Correccion[];
+  /** La pista marcada (camara fija), o null. No es una correccion: no se apunta. */
+  pista: Calibracion | null;
 }
 
 /** Ningun fragmento queda mas corto que esto al partirlo o ajustarlo. */

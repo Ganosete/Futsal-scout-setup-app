@@ -121,7 +121,9 @@
           <p id="resumen-analisis" class="resumen"></p>
           <p id="equipos-analisis" class="nota"></p>
           <p id="partes-analisis" class="nota"></p>
-          <video id="video-editor" class="video-editor" controls playsinline preload="metadata"></video>
+          <div id="marco-video-editor" class="marco-video">
+            <video id="video-editor" class="video-editor" controls playsinline preload="metadata"></video>
+          </div>
           <!-- Con el ratón; con el teclado se llega a lo mismo con los atajos y la lista. -->
           <div id="linea-analisis" class="linea" aria-hidden="true"></div>
           <div id="partes-editor" class="partes-editor" aria-label="Partes del partido">
@@ -178,6 +180,23 @@
             tu navegador: la primera vez descarga el detector (108 MB). Con tarjeta gráfica tarda unos minutos; sin ella,
             mucho más. Lo que hayas puesto a mano no se toca.
           </p>
+          <details id="pista-equipos" class="pista">
+            <summary>La pista, si la cámara no se mueve <span id="resumen-pista" class="resumen-pista"></span></summary>
+            <p class="nota">
+              Marca sus cuatro esquinas sobre el vídeo, en cualquier orden. Con la pista marcada se buscan también los
+              balones que salen y la posesión se mide por toques. No sirve si la cámara sigue el balón.
+            </p>
+            <div class="pista-controles">
+              <button id="btn-marcar-pista" type="button" class="boton-mini">Marcar las esquinas</button>
+              <button id="btn-girar-pista" type="button" class="boton-mini" hidden>Girar</button>
+              <button id="btn-quitar-pista" type="button" class="boton-mini" aria-label="Quitar la pista marcada" hidden>Quitar</button>
+            </div>
+            <div class="pista-medidas">
+              <label>Largo <input id="largo-pista" type="number" inputmode="decimal" min="25" max="42" step="0.5" value="40" /> m</label>
+              <label>Ancho <input id="ancho-pista" type="number" inputmode="decimal" min="16" max="25" step="0.5" value="20" /> m</label>
+            </div>
+            <p id="estado-pista" class="estado-analisis" role="status" aria-live="polite"></p>
+          </details>
           <div class="analisis-controles">
             <button id="btn-buscar-equipos" type="button" class="boton boton-secundario">Buscar quién ataca</button>
             <button id="btn-parar-equipos" type="button" class="boton boton-secundario" hidden>Parar</button>

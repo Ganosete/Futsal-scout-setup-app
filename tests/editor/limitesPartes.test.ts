@@ -61,6 +61,7 @@ describe('aplicarPartes', () => {
       partes: una,
       fragmentos: [f('a', 0, 20, 1, true, 'local'), f('b', 30, 70), f('c', 75, 100)],
       correcciones: [],
+      pista: null,
     };
     const e = aplicarPartes(estado, dos, tramos, ids());
     // b cruza el descanso (40-60): se queda en dos trozos, uno en cada parte.
@@ -84,6 +85,7 @@ describe('aplicarPartes', () => {
       ],
       fragmentos: [f('x', 30, 40), f('y', 60, 70, 2), f('z', 75, 90, 2)],
       correcciones: [],
+      pista: null,
     };
     const nuevas: Parte[] = [
       { numero: 1, desde: 0, hasta: 40 },
@@ -104,6 +106,7 @@ describe('aplicarPartes', () => {
       partes: dos,
       fragmentos: [f('a', 0, 20), f('b', 30, 40, 1, true, 'visitante'), f('c', 60, 100, 2)],
       correcciones: [],
+      pista: null,
     };
     const nuevas: Parte[] = [
       { numero: 1, desde: 0, hasta: 35 },

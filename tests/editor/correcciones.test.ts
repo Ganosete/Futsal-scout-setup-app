@@ -10,6 +10,7 @@ const E: EstadoEditor = {
     { id: 'b', desde: 30, hasta: 60, parte: 1, equipo: null, manual: false },
   ],
   correcciones: [],
+  pista: null,
 };
 const id = () => 'n';
 

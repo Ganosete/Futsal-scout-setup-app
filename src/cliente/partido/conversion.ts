@@ -14,15 +14,16 @@ export function edicionDeAnalisis(r: ResultadoAnalisis, duracion: number): Edici
     correcciones: [],
     // Del balon parado solo hace falta donde esta: con eso se calculan los fragmentos al alargar una parte.
     tramos: r.tramos.map(({ desde, hasta }) => ({ desde, hasta })),
+    pista: null,
   };
 }
 
 export function edicionDeEstado(e: EstadoEditor, tramos: readonly Intervalo[]): Edicion {
-  return { version: 1, duracion: e.duracion, partes: e.partes, fragmentos: e.fragmentos, correcciones: e.correcciones, tramos };
+  return { version: 1, duracion: e.duracion, partes: e.partes, fragmentos: e.fragmentos, correcciones: e.correcciones, tramos, pista: e.pista };
 }
 
 export function estadoDeEdicion(e: Edicion): EstadoEditor {
-  return { duracion: e.duracion, partes: e.partes, fragmentos: e.fragmentos, correcciones: e.correcciones };
+  return { duracion: e.duracion, partes: e.partes, fragmentos: e.fragmentos, correcciones: e.correcciones, pista: e.pista };
 }
 
 const redondear = (x: number, decimales: number): number => Math.round(x * 10 ** decimales) / 10 ** decimales;

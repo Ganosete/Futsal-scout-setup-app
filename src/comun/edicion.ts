@@ -1,6 +1,9 @@
 import type { Intervalo } from '../nucleo/balonParado/tramos';
 import type { Equipo, Fragmento } from '../nucleo/fragmentos';
 import type { Parte } from '../nucleo/partes';
+import type { Calibracion } from '../nucleo/pista/calibracion';
+import { medidasValidas } from '../nucleo/pista/medidas';
+import type { Vec2 } from '../nucleo/tipos';
 
 /**
  * Lo que se guarda de un partido editado: lo justo para seguir corrigiendo
@@ -30,6 +33,8 @@ export interface Edicion {
   correcciones: readonly Correccion[];
   /** El balon parado del analisis: al alargar una parte, de ahi salen los fragmentos nuevos. */
   tramos: readonly Intervalo[];
+  /** La pista marcada, si la camara esta fija. Las ediciones de antes no la llevan: se leen como null. */
+  pista: Calibracion | null;
 }
 
 /** Unos cientos de KB es lo normal; esto deja sitio a un partido muy corregido. */
@@ -75,6 +80,22 @@ function fragmento(x: unknown): Fragmento | null {
   return { id, ...i, parte: p, equipo: equipo as Equipo | null, manual };
 }
 
+/** Un punto de la imagen normalizado: lo que se marca a mano cae dentro del fotograma. */
+function puntoImagen(x: unknown): Vec2 | null {
+  if (!esObjeto(x) || !esNumero(x.x) || !esNumero(x.y) || x.x < 0 || x.x > 1 || x.y < 0 || x.y > 1) return null;
+  return { x: x.x, y: x.y };
+}
+
+function calibracion(x: unknown): Calibracion | null {
+  if (!esObjeto(x) || !esObjeto(x.medidas)) return null;
+  const esquinas = lista(x.esquinas, puntoImagen, 4);
+  const { largo, ancho } = x.medidas;
+  if (!esquinas || esquinas.length !== 4 || !esNumero(largo) || !esNumero(ancho)) return null;
+  const medidas = { largo, ancho };
+  if (!medidasValidas(medidas)) return null;
+  return { esquinas: [esquinas[0], esquinas[1], esquinas[2], esquinas[3]], medidas };
+}
+
 function correccion(x: unknown): Correccion | null {
   if (!esObjeto(x) || typeof x.tipo !== 'string' || !TIPOS.has(x.tipo)) return null;
   const antes = lista(x.antes, fragmento, MAXIMOS.fragmentos);
@@ -88,8 +109,10 @@ export function leerEdicion(x: unknown): Edicion | null {
   const fragmentos = lista(x.fragmentos, fragmento, MAXIMOS.fragmentos);
   const correcciones = lista(x.correcciones, correccion, MAXIMOS.correcciones);
   const tramos = lista(x.tramos, intervalo, MAXIMOS.tramos);
+  const pista = x.pista === undefined || x.pista === null ? null : calibracion(x.pista);
   if (!partes || partes.length === 0 || !fragmentos || !correcciones || !tramos) return null;
+  if (pista === null && x.pista !== undefined && x.pista !== null) return null;
   // El editor da por hecho que van en orden y sin pisarse; si no, mejor no abrirlo que estropearlo.
   for (let i = 1; i < fragmentos.length; i++) if (fragmentos[i].desde < fragmentos[i - 1].hasta) return null;
-  return { version: 1, duracion: x.duracion, partes, fragmentos, correcciones, tramos };
+  return { version: 1, duracion: x.duracion, partes, fragmentos, correcciones, tramos, pista };
 }
