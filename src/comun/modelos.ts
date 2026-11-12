@@ -1,8 +1,24 @@
+import { COCO_91 } from '../nucleo/deteccion/clasesCoco';
+
 /**
  * Los modelos que usa el navegador. Lo comparten el Worker, que los sirve, y
  * el navegador, que los descarga y comprueba: un fichero se acepta solo si
  * mide y da el SHA-256 de aqui, venga de donde venga.
  */
+
+/**
+ * Que sale por cada indice del detector y cuales importan. El de COCO tiene
+ * 91 clases; uno afinado para la sala tendra tres (fondo, jugador y balon),
+ * y cambiar de uno a otro es cambiar esto y el fichero, no el codigo.
+ */
+export interface ClasesDetector {
+  /** El nombre de cada indice de salida; el 0 es el fondo. */
+  nombres: readonly string[];
+  persona: string;
+  balon: string;
+}
+
+export const CLASES_COCO: ClasesDetector = { nombres: COCO_91, persona: 'person', balon: 'sports ball' };
 
 export interface ModeloDetector {
   id: string;
@@ -16,6 +32,7 @@ export interface ModeloDetector {
   /** De donde lo trae el Worker. */
   origen: string;
   licencia: string;
+  clases: ClasesDetector;
 }
 
 /**
@@ -33,6 +50,7 @@ export const DETECTOR: ModeloDetector = {
   entrada: 384,
   origen: 'https://huggingface.co/PierreMarieCurie/rf-detr-onnx/resolve/main/rf-detr-nano.onnx',
   licencia: 'Apache-2.0 (pesos, Roboflow) · MIT (conversión a ONNX, PierreMarieCurie)',
+  clases: CLASES_COCO,
 };
 
 /** Lo que el navegador necesita para pedirlo y comprobarlo. */
@@ -41,6 +59,7 @@ export interface ManifiestoModelo {
   tamano: number;
   sha256: string;
   entrada: number;
+  clases: ClasesDetector;
 }
 
 /** La version va en la ruta: una direccion siempre es el mismo fichero. */
@@ -49,5 +68,5 @@ export function rutaModelo(m: Pick<ModeloDetector, 'id' | 'version' | 'archivo'>
 }
 
 export function manifiesto(m: ModeloDetector): ManifiestoModelo {
-  return { url: rutaModelo(m), tamano: m.tamano, sha256: m.sha256, entrada: m.entrada };
+  return { url: rutaModelo(m), tamano: m.tamano, sha256: m.sha256, entrada: m.entrada, clases: m.clases };
 }

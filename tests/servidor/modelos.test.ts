@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
-import { DETECTOR } from '../../src/comun/modelos';
+import { CLASES_COCO, DETECTOR } from '../../src/comun/modelos';
 import { crearIdentificador } from '../../src/servidor/acceso/identidad';
 import { crearApi } from '../../src/servidor/api';
 
@@ -13,10 +13,10 @@ function apiCon(traer: typeof fetch) {
 const RUTA = '/api/modelos/rf-detr-nano-384/1/rf-detr-nano.onnx';
 
 describe('los modelos del navegador', () => {
-  it('el manifiesto dice donde esta el detector, cuanto mide y su SHA-256', async () => {
+  it('el manifiesto dice donde esta el detector, cuanto mide, su SHA-256 y sus clases', async () => {
     const r = await apiCon(fetch)('/api/modelos/detector');
     expect(r.status).toBe(200);
-    expect(await r.json()).toEqual({ url: RUTA, tamano: 107_816_789, sha256: DETECTOR.sha256, entrada: 384 });
+    expect(await r.json()).toEqual({ url: RUTA, tamano: 107_816_789, sha256: DETECTOR.sha256, entrada: 384, clases: CLASES_COCO });
   });
 
   it('el fichero lo trae el Worker de Hugging Face y lo pasa tal cual', async () => {

@@ -24,8 +24,14 @@ export interface Fotograma {
   balon: Caja | null;
 }
 
-export function separar(dets: readonly Deteccion[]): Fotograma {
-  const personas = dets.filter((d) => d.etiqueta === 'person' && d.score >= UMBRAL_PERSONA).map((d) => d.caja);
-  const balones = dets.filter((d) => d.etiqueta === 'sports ball').sort((a, b) => b.score - a.score);
+/** Como se llaman la persona y el balon en las clases del detector (las de COCO, si no se dice). */
+export interface NombresDetector {
+  persona: string;
+  balon: string;
+}
+
+export function separar(dets: readonly Deteccion[], nombres: NombresDetector = { persona: 'person', balon: 'sports ball' }): Fotograma {
+  const personas = dets.filter((d) => d.etiqueta === nombres.persona && d.score >= UMBRAL_PERSONA).map((d) => d.caja);
+  const balones = dets.filter((d) => d.etiqueta === nombres.balon).sort((a, b) => b.score - a.score);
   return { personas, balon: balones[0]?.caja ?? null };
 }

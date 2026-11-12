@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
+import { CLASES_COCO } from '../src/comun/modelos';
 import { EQUIPOS, esperarGuardado, esperarSubida, expect, fixture, marcarPista, subirYAnalizar, test } from './ayuda';
 
 // «Quién ataca» con el detector de juguete (tools/crear_modelo_prueba.py): la
@@ -12,7 +13,13 @@ const MODELO = readFileSync(fixture('detector_prueba.onnx'));
 async function conDetectorDePrueba(page: Page): Promise<void> {
   await page.route('**/api/modelos/detector', (r) =>
     r.fulfill({
-      json: { url: '/api/modelos/prueba/1/detector_prueba.onnx', tamano: MODELO.length, sha256: createHash('sha256').update(MODELO).digest('hex'), entrada: 384 },
+      json: {
+        url: '/api/modelos/prueba/1/detector_prueba.onnx',
+        tamano: MODELO.length,
+        sha256: createHash('sha256').update(MODELO).digest('hex'),
+        entrada: 384,
+        clases: CLASES_COCO,
+      },
     }),
   );
   await page.route('**/api/modelos/prueba/1/detector_prueba.onnx', (r) => r.fulfill({ body: MODELO, contentType: 'application/octet-stream' }));

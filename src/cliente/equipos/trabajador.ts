@@ -53,7 +53,7 @@ async function detectar(p: PeticionEquipos): Promise<void> {
     if (!pista) throw new Error('El vídeo no tiene imagen.');
     if (!(await pista.canDecode())) throw new Error('Este navegador no sabe leer la imagen de este vídeo. Prueba con Chrome o Edge.');
     const lado = p.entrada;
-    const espec = { ...ESPEC_RFDETR, tamEntrada: lado };
+    const espec = { ...ESPEC_RFDETR, tamEntrada: lado, clases: [...p.clases.nombres], clasesPermitidas: [p.clases.persona, p.clases.balon] };
     const ctxModelo = contexto(lado, lado);
     let ctxColor: OffscreenCanvasRenderingContext2D | null = null;
     const registros: RegistroFotograma[] = [];
@@ -73,7 +73,7 @@ async function detectar(p: PeticionEquipos): Promise<void> {
         const logits = tensores.find((t) => t.dims[2] !== 4);
         if (!cajas || !logits) throw new Error('El detector no devuelve lo que se esperaba.');
         const t = calcularTransformacion(ancho, alto, lado, 'stretch');
-        const f = separar(afinar(decodificarRfdetr(aPlano(cajas), aPlano(logits), espec, t, ancho, alto), espec));
+        const f = separar(afinar(decodificarRfdetr(aPlano(cajas), aPlano(logits), espec, t, ancho, alto), espec), p.clases);
 
         const escala = Math.min(1, ANCHO_COLOR / ancho);
         const ac = Math.round(ancho * escala);

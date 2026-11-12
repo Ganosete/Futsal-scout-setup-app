@@ -109,7 +109,7 @@ export function crearPanelEquipos(editor: Editor): PanelEquipos {
       barra.mostrar(0);
       let comienzo = 0;
       let como = '';
-      const actual = detectarEquipos(d.origen, modelo.bytes, modelo.manifiesto.entrada, fragmentos, {
+      const actual = detectarEquipos(d.origen, modelo.bytes, modelo.manifiesto, fragmentos, {
         alPreparar: (p) => {
           comienzo = performance.now();
           como =

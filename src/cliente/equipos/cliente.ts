@@ -1,3 +1,4 @@
+import type { ManifiestoModelo } from '../../comun/modelos';
 import type { Intervalo } from '../../nucleo/balonParado/tramos';
 import { FPS_EQUIPOS, type PeticionEquipos, type RespuestaEquipos } from './protocolo';
 
@@ -16,7 +17,13 @@ export interface AvisosDeteccion {
 }
 
 /** Arranca la busqueda de equipos en su propio worker. El modelo se transfiere: despues ya no esta aqui. */
-export function detectarEquipos(video: File | URL, modelo: ArrayBuffer, entrada: number, tramos: readonly Intervalo[], avisos: AvisosDeteccion): DeteccionEnCurso {
+export function detectarEquipos(
+  video: File | URL,
+  modelo: ArrayBuffer,
+  { entrada, clases }: Pick<ManifiestoModelo, 'entrada' | 'clases'>,
+  tramos: readonly Intervalo[],
+  avisos: AvisosDeteccion,
+): DeteccionEnCurso {
   const trabajador = new Worker(new URL('./trabajador.ts', import.meta.url), { type: 'module' });
   let resolver: (r: DeteccionHecha | null) => void = () => undefined;
   let rechazar: (e: Error) => void = () => undefined;
@@ -41,6 +48,7 @@ export function detectarEquipos(video: File | URL, modelo: ArrayBuffer, entrada:
     video: video instanceof URL ? video.href : video,
     modelo,
     entrada,
+    clases,
     tramos: tramos.map(({ desde, hasta }) => ({ desde, hasta })),
     fps: FPS_EQUIPOS,
   };

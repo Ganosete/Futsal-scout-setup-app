@@ -1,3 +1,4 @@
+import type { ClasesDetector } from '../../comun/modelos';
 import type { Intervalo } from '../../nucleo/balonParado/tramos';
 import type { RegistroFotograma } from '../../nucleo/equipos/registro';
 import type { Backend } from './sesion';
@@ -11,6 +12,7 @@ export interface PeticionEquipos {
   /** El .onnx ya comprobado; se transfiere, no se copia. */
   modelo: ArrayBuffer;
   entrada: number;
+  clases: ClasesDetector;
   /** Los fragmentos de juego: solo ahi se mira. */
   tramos: Intervalo[];
   /** Fotogramas por segundo con WebGPU; sin ella se miran menos (FPS_SIN_GPU). */
