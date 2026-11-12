@@ -43,6 +43,11 @@ describe('en localhost, sin Access', () => {
     expect(await identificar(con('Ana@club.es'), CONFIG)).toEqual({ ok: true, email: 'entrenador@localhost' });
   });
 
+  it('en localhost, la cookie de pruebas a sin-sesion hace como si no hubiera nadie', async () => {
+    const r = await identificar(peticion('http://localhost/api', { cookie: 'futsal-scout-local=sin-sesion' }), CONFIG);
+    expect(r).toMatchObject({ ok: false, estado: 401 });
+  });
+
   it('fuera de localhost la cookie no sirve de nada', async () => {
     const r = await identificar(peticion('https://scout.club.es/api', { cookie: 'futsal-scout-local=prueba-7' }), CONFIG);
     expect(r).toMatchObject({ ok: false, estado: 401 });
@@ -50,10 +55,10 @@ describe('en localhost, sin Access', () => {
 });
 
 describe('detras de Access', () => {
-  it('sin configurar, la API no esta disponible (503), no abierta', async () => {
+  it('sin configurar, se pide entrar con el email (401): la API no queda abierta', async () => {
     const { identificar } = conClaves();
     const r = await identificar(peticion('https://scout.club.es/api'), { ACCESS_EQUIPO: '', ACCESS_AUD: 'aud-1' });
-    expect(r).toMatchObject({ ok: false, estado: 503 });
+    expect(r).toEqual({ ok: false, estado: 401, mensaje: 'Entra con tu email para seguir.' });
   });
 
   it('sin el token de Access: 401', async () => {

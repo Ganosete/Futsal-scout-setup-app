@@ -60,8 +60,8 @@ describe('los modelos del navegador', () => {
     expect(pedido).toBe(false);
   });
 
-  it('es para los entrenadores: fuera de localhost y sin Access, 503', async () => {
+  it('es para los entrenadores: fuera de localhost, sin sesion ni Access, 401', async () => {
     const api = crearApi(crearIdentificador(), fetch);
-    expect((await api(new Request(`https://scout.club.es${RUTA}`), env)).status).toBe(503);
+    expect((await api(new Request(`https://scout.club.es${RUTA}`), env)).status).toBe(401);
   });
 });

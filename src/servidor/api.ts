@@ -1,5 +1,8 @@
 import type { Identificador } from './acceso/identidad';
 import { origenPermitido } from './acceso/origen';
+import { verCuenta } from './cuentas/cuenta';
+import type { Cartero } from './cuentas/correo';
+import { crearEntrar, emailDeLaSesion } from './cuentas/entrar';
 import { crear as crearEnlace, listar as listarEnlaces, quitar as quitarEnlace } from './compartir/enlaces';
 import { verCompartido, videoCompartido } from './compartir/jugadores';
 import type { Contexto } from './contexto';
@@ -14,22 +17,28 @@ import { crearEnrutador, type Manejador } from './rutas';
 import { salud } from './salud';
 
 /**
- * Las rutas de la API del entrenador. /api/salud es publica (dice que version
- * hay publicada aunque Access no este configurado); el resto pide saber quien
- * llama, y lo que no es GET, que venga de la propia web.
+ * Las rutas de la API del entrenador. /api/salud y entrar son publicas; el
+ * resto pide saber quien llama (su sesion, o Access) y, lo que no es GET, que
+ * venga de la propia web.
  */
-export function crearApi(identificar: Identificador, traer: typeof fetch = fetch): (peticion: Request, env: Env) => Promise<Response> {
+export function crearApi(identificar: Identificador, traer: typeof fetch = fetch, cartero?: Cartero): (peticion: Request, env: Env) => Promise<Response> {
   const privada =
     (manejar: Manejador<Contexto>): Manejador<Env> =>
     async (peticion, parametros, env) => {
       if (!origenPermitido(peticion)) return error(403, 'Esta petición no viene de Futsal Scout.');
-      const quien = await identificar(peticion, env);
+      const deSesion = await emailDeLaSesion(peticion, env.BD);
+      const quien = deSesion ? { ok: true as const, email: deSesion } : await identificar(peticion, env);
       if (!quien.ok) return error(quien.estado, quien.mensaje);
       return manejar(peticion, parametros, { env, dueno: quien.email });
     };
+  const { pedirCodigo, entrar, salir } = crearEntrar(cartero);
 
   return crearEnrutador<Env>([
     { metodo: 'GET', patron: '/api/salud', manejar: salud },
+    { metodo: 'POST', patron: '/api/entrar/codigo', manejar: pedirCodigo },
+    { metodo: 'POST', patron: '/api/entrar', manejar: entrar },
+    { metodo: 'POST', patron: '/api/salir', manejar: salir },
+    { metodo: 'GET', patron: '/api/cuenta', manejar: privada(verCuenta) },
     { metodo: 'GET', patron: '/api/partidos', manejar: privada(listar) },
     { metodo: 'POST', patron: '/api/partidos', manejar: privada(crear) },
     { metodo: 'GET', patron: '/api/partidos/:id', manejar: privada(ver) },

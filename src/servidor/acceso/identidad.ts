@@ -1,18 +1,19 @@
 import { verificarJwt, type ClaveJwk } from './jwt';
 
 /**
- * Quien llama a la API. En el MVP no hay altas propias: la web va detras de
- * Cloudflare Access (codigo por email), que manda en cada peticion un JWT
- * firmado con el email de quien ha entrado. Se verifica aqui, aunque Access
- * ya filtre delante, porque el Worker se puede alcanzar por otra direccion
- * que Access no cubra (workers.dev, una vista previa) y entonces la cabecera
- * podria ponerla cualquiera.
+ * Quien llama a la API cuando no trae sesion propia (cuentas/entrar.ts): la
+ * web puede ir detras de Cloudflare Access (codigo por email), que manda en
+ * cada peticion un JWT firmado con el email de quien ha entrado. Se verifica
+ * aqui, aunque Access ya filtre delante, porque el Worker se puede alcanzar
+ * por otra direccion que Access no cubra (workers.dev, una vista previa) y
+ * entonces la cabecera podria ponerla cualquiera.
  *
  * En localhost no hay Access: quien llama es «entrenador@localhost», o el
  * nombre de la cookie `futsal-scout-local` si la hay. Con eso cada prueba de
- * Playwright tiene sus propios partidos y se pueden lanzar en paralelo. En
- * produccion el nombre del host nunca es localhost: Cloudflare no entrega al
- * Worker una peticion para un host que no es suyo.
+ * Playwright tiene sus propios partidos y se pueden lanzar en paralelo; con el
+ * valor `sin-sesion` se hace como si no hubiera nadie, para probar la pantalla
+ * de entrar. En produccion el nombre del host nunca es localhost: Cloudflare
+ * no entrega al Worker una peticion para un host que no es suyo.
  */
 
 export interface ConfigAcceso {
@@ -26,7 +27,7 @@ export interface ConfigAcceso {
   ACCESS_AUD: string;
 }
 
-export type Identificacion = { ok: true; email: string } | { ok: false; estado: 401 | 503; mensaje: string };
+export type Identificacion = { ok: true; email: string } | { ok: false; estado: 401; mensaje: string };
 
 export type Identificador = (peticion: Request, config: ConfigAcceso) => Promise<Identificacion>;
 
@@ -39,6 +40,8 @@ export interface OpcionesIdentificador {
 
 const HOSTS_LOCALES = new Set(['localhost', '127.0.0.1', '[::1]']);
 const COOKIE_LOCAL = 'futsal-scout-local';
+/** En localhost, hacer como si no hubiera sesion: es lo que prueba la pantalla de entrar. */
+export const SIN_SESION_LOCAL = 'sin-sesion';
 const NOMBRE_LOCAL = /^[a-z0-9-]{1,40}$/;
 /** Access rota las claves cada pocas semanas; diez minutos de cache sobran. */
 const VIDA_CLAVES_MS = 10 * 60 * 1000;
@@ -74,11 +77,8 @@ async function clavesDeAccess(url: string): Promise<readonly ClaveJwk[]> {
   return Array.isArray(cuerpo.keys) ? (cuerpo.keys as ClaveJwk[]) : [];
 }
 
-const NO_CONFIGURADO: Identificacion = {
-  ok: false,
-  estado: 503,
-  mensaje: 'Falta configurar Cloudflare Access: la API no está disponible todavía.',
-};
+/** Sin Access configurado, se entra con el email (cuentas/entrar.ts): la API nunca queda abierta. */
+const ENTRA: Identificacion = { ok: false, estado: 401, mensaje: 'Entra con tu email para seguir.' };
 const SIN_SESION: Identificacion = { ok: false, estado: 401, mensaje: 'Tu sesión no es válida: recarga la página para volver a entrar.' };
 
 export function crearIdentificador(opciones: OpcionesIdentificador = {}): Identificador {
@@ -97,13 +97,16 @@ export function crearIdentificador(opciones: OpcionesIdentificador = {}): Identi
   }
 
   return async (peticion, config) => {
-    if (HOSTS_LOCALES.has(new URL(peticion.url).hostname)) return { ok: true, email: emailLocal(peticion) };
+    if (HOSTS_LOCALES.has(new URL(peticion.url).hostname)) {
+      if (cookie(peticion, COOKIE_LOCAL) !== SIN_SESION_LOCAL) return { ok: true, email: emailLocal(peticion) };
+      return ENTRA;
+    }
     const equipo = dominioEquipo(config.ACCESS_EQUIPO ?? '');
     const auds = (config.ACCESS_AUD ?? '')
       .split(',')
       .map((a) => a.trim())
       .filter((a) => a.length > 0);
-    if (!equipo || auds.length === 0) return NO_CONFIGURADO;
+    if (!equipo || auds.length === 0) return ENTRA;
     const token = peticion.headers.get('cf-access-jwt-assertion');
     if (!token) return SIN_SESION;
 
