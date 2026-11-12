@@ -1,3 +1,5 @@
+import { plan, type Plan } from '../../comun/planes';
+
 /** Las cuentas en D1: usuarios, codigos de entrada y sesiones. */
 
 export interface FilaUsuario {
@@ -17,6 +19,11 @@ export interface FilaCodigo {
 
 export async function leerUsuario(bd: D1Database, email: string): Promise<FilaUsuario | null> {
   return bd.prepare('SELECT * FROM usuarios WHERE email = ?').bind(email).first<FilaUsuario>();
+}
+
+/** Quien aun no tiene fila (entra por Access y no ha abierto «Mi cuenta») va con el gratuito. */
+export async function planDe(bd: D1Database, email: string): Promise<Plan> {
+  return plan((await leerUsuario(bd, email))?.plan);
 }
 
 /** El alta: si ya existe, no se toca (ni su plan). */

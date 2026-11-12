@@ -1,5 +1,6 @@
 import { bytesSubidos } from '../../comun/partesSubida';
 import type { EstadoPartido, NuevoPartido, Partido } from '../../comun/partido';
+import { fechaDeBorrado, plan, type Uso } from '../../comun/planes';
 
 /**
  * Los partidos en D1. Toda consulta de un partido lleva el dueno en el WHERE:
@@ -25,7 +26,13 @@ export interface FilaPartido {
   fragmentos: number | null;
   creado: string;
   actualizado: string;
+  /** Del dueno (LEFT JOIN usuarios): de ahi sale cuando se borra. Null si aun no tiene fila. */
+  plan: string | null;
+  plan_desde: string | null;
 }
+
+/** Cada partido con el plan de su dueno. */
+const CON_PLAN = 'SELECT p.*, u.plan AS plan, u.plan_desde AS plan_desde FROM partidos p LEFT JOIN usuarios u ON u.email = p.dueno';
 
 export interface ParteSubida {
   numero: number;
@@ -53,20 +60,21 @@ export function aPartido(f: FilaPartido, partes: readonly number[]): Partido {
     editado: f.editado,
     fragmentos: f.fragmentos,
     creado: f.creado,
+    seBorra: fechaDeBorrado(f.creado, f.plan_desde, plan(f.plan)),
   };
 }
 
 export async function leerPartido(bd: D1Database, dueno: string, id: string): Promise<FilaPartido | null> {
-  return bd.prepare('SELECT * FROM partidos WHERE id = ? AND dueno = ?').bind(id, dueno).first<FilaPartido>();
+  return bd.prepare(`${CON_PLAN} WHERE p.id = ? AND p.dueno = ?`).bind(id, dueno).first<FilaPartido>();
 }
 
 export async function buscarPorHuella(bd: D1Database, dueno: string, huella: string): Promise<FilaPartido | null> {
-  return bd.prepare('SELECT * FROM partidos WHERE dueno = ? AND huella = ?').bind(dueno, huella).first<FilaPartido>();
+  return bd.prepare(`${CON_PLAN} WHERE p.dueno = ? AND p.huella = ?`).bind(dueno, huella).first<FilaPartido>();
 }
 
 export async function listarPartidos(bd: D1Database, dueno: string): Promise<{ filas: FilaPartido[]; partes: Map<string, number[]> }> {
   const [partidos, partes] = await bd.batch([
-    bd.prepare('SELECT * FROM partidos WHERE dueno = ? ORDER BY creado DESC'),
+    bd.prepare(`${CON_PLAN} WHERE p.dueno = ? ORDER BY p.creado DESC`),
     bd.prepare(
       "SELECT s.partido, s.numero FROM partes_subidas s JOIN partidos p ON p.id = s.partido WHERE p.dueno = ? AND p.estado = 'subiendo'",
     ),
@@ -76,6 +84,15 @@ export async function listarPartidos(bd: D1Database, dueno: string): Promise<{ f
     porPartido.set(r.partido, [...(porPartido.get(r.partido) ?? []), r.numero]);
   }
   return { filas: partidos.results as FilaPartido[], partes: porPartido };
+}
+
+/** Lo que ocupa cada uno. Lo que esta a medio subir cuenta entero: ya tiene su sitio. */
+export async function usoDe(bd: D1Database, dueno: string): Promise<Uso> {
+  const r = await bd
+    .prepare('SELECT COUNT(*) AS partidos, COALESCE(SUM(tamano), 0) AS bytes FROM partidos WHERE dueno = ?')
+    .bind(dueno)
+    .first<Uso>();
+  return { partidos: r?.partidos ?? 0, bytes: r?.bytes ?? 0 };
 }
 
 export interface DatosCreacion {

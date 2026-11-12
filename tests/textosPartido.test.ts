@@ -15,6 +15,7 @@ const P: Partido = {
   editado: '2026-11-09T10:00:00.000Z',
   fragmentos: 38,
   creado: '2026-11-09T09:00:00.000Z',
+  seBorra: null,
 };
 
 describe('textos de los partidos', () => {

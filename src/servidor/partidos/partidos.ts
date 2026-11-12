@@ -1,13 +1,14 @@
 import { MAXIMO_PARTES, numeroPartes } from '../../comun/partesSubida';
 import { tipoVideo, validarNuevoPartido, type NuevoPartido, type PartidoParaSubir } from '../../comun/partido';
+import { motivoParaNoSubir } from '../../comun/planes';
 import { partidoDe, type Contexto } from '../contexto';
+import { planDe } from '../cuentas/almacen';
 import { leerJson } from '../cuerpo';
 import { FalloApi, json } from '../respuestas';
 import type { Parametros } from '../rutas';
 import {
   aPartido,
   actualizarDatos,
-  borrarPartido,
   buscarPorHuella,
   claves,
   crearPartido,
@@ -15,8 +16,10 @@ import {
   leerPartido,
   listarPartidos,
   partesSubidas,
+  usoDe,
   type FilaPartido,
 } from './almacen';
+import { borrarDelTodo } from './borrado';
 
 /** Crear, reanudar, listar y borrar partidos. */
 
@@ -57,6 +60,12 @@ export async function crear(peticion: Request, _p: Parametros, ctx: Contexto): P
   const existente = await buscarPorHuella(env.BD, dueno, datos.huella);
   if (existente) return json(await reanudar(ctx, existente, datos, ahora));
 
+  // Reanudar no pasa por aqui: ese partido ya contaba. Dos subidas a la vez
+  // podrian pasar las dos; es el mismo entrenador, y lo vera en «Mi cuenta».
+  const [suPlan, uso] = await Promise.all([planDe(env.BD, dueno), usoDe(env.BD, dueno)]);
+  const motivo = motivoParaNoSubir(suPlan, uso, datos.tamano);
+  if (motivo) throw new FalloApi(402, motivo);
+
   const id = crypto.randomUUID();
   const tipo = tipoVideo(datos.nombreFichero);
   const subida = await env.VIDEOS.createMultipartUpload(claves.video(id), { httpMetadata: { contentType: tipo } });
@@ -85,9 +94,6 @@ export async function borrar(_peticion: Request, { id }: Parametros, ctx: Contex
   const { env, dueno } = ctx;
   const fila = await leerPartido(env.BD, dueno, id);
   // Borrar lo que ya no esta no es un error: el resultado es el mismo.
-  if (!fila) return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } });
-  if (fila.subida_id) await env.VIDEOS.resumeMultipartUpload(claves.video(id), fila.subida_id).abort().catch(() => undefined);
-  await env.VIDEOS.delete([claves.video(id), claves.edicion(id), claves.senales(id), claves.detecciones(id)]);
-  await borrarPartido(env.BD, dueno, id);
+  if (fila) await borrarDelTodo(env, fila);
   return new Response(null, { status: 204, headers: { 'cache-control': 'no-store' } });
 }

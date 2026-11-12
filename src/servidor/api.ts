@@ -1,6 +1,6 @@
 import type { Identificador } from './acceso/identidad';
 import { origenPermitido } from './acceso/origen';
-import { verCuenta } from './cuentas/cuenta';
+import { cambiarDePlan, verCuenta } from './cuentas/cuenta';
 import type { Cartero } from './cuentas/correo';
 import { crearEntrar, emailDeLaSesion } from './cuentas/entrar';
 import { crear as crearEnlace, listar as listarEnlaces, quitar as quitarEnlace } from './compartir/enlaces';
@@ -39,6 +39,7 @@ export function crearApi(identificar: Identificador, traer: typeof fetch = fetch
     { metodo: 'POST', patron: '/api/entrar', manejar: entrar },
     { metodo: 'POST', patron: '/api/salir', manejar: salir },
     { metodo: 'GET', patron: '/api/cuenta', manejar: privada(verCuenta) },
+    { metodo: 'PUT', patron: '/api/cuenta/plan', manejar: privada(cambiarDePlan) },
     { metodo: 'GET', patron: '/api/partidos', manejar: privada(listar) },
     { metodo: 'POST', patron: '/api/partidos', manejar: privada(crear) },
     { metodo: 'GET', patron: '/api/partidos/:id', manejar: privada(ver) },

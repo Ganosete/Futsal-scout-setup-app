@@ -34,6 +34,8 @@ export interface Partido {
   editado: string | null;
   fragmentos: number | null;
   creado: string;
+  /** Cuando lo borra la retencion del plan de su dueno; null si no se borra. */
+  seBorra: string | null;
 }
 
 /** Lo que responde POST /api/partidos: el partido y lo que falta por subir. */
