@@ -11,9 +11,9 @@ import { centro, distanciaEnAlturas, type RegistroFotograma } from './registro';
  * mitad esta el balon: con la presion alta, las salidas de balon y las
  * transiciones de la sala, la mitad no dice quien ataca.
  *
- * Un pase que pasa cerca de un rival cuenta como suyo: la posesion por
- * contacto (que el balon cambie de direccion junto al jugador) es de la
- * fase 3. Por eso un fragmento se decide por mayoria y no por un fotograma.
+ * Un pase que pasa cerca de un rival cuenta como suyo: por eso un fragmento
+ * se decide por mayoria y no por un fotograma. Con la pista marcada se vota
+ * por toques (porToques.ts), que no tiene ese problema.
  */
 
 export interface Voto {

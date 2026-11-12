@@ -1,5 +1,6 @@
 import { formatearTamano } from '../../comun/formato';
 import { repartirColores, SEPARACION_MINIMA, type Colores } from '../../nucleo/equipos/colores';
+import { votosPorToques } from '../../nucleo/equipos/porToques';
 import { votar, type Clasificador } from '../../nucleo/equipos/posesion';
 import { leerRegistros, type RegistroFotograma } from '../../nucleo/equipos/registro';
 import type { Fragmento } from '../../nucleo/fragmentos';
@@ -51,6 +52,7 @@ export function crearPanelEquipos(editor: Editor): PanelEquipos {
   const partir = el<HTMLInputElement>('partir-posesion');
   const botonesColor = [...colores.querySelectorAll<HTMLButtonElement>('.boton-color')];
   const fuera = new BloqueFuera(editor);
+  const video = el<HTMLVideoElement>('video-editor');
 
   let datos: DatosEquipos | null = null;
   let registros: RegistroFotograma[] = [];
@@ -148,14 +150,19 @@ export function crearPanelEquipos(editor: Editor): PanelEquipos {
       centroides: [reparto.grupos[0].centroide, reparto.grupos[1].centroide],
       equipos: grupo === 0 ? ['local', 'visitante'] : ['visitante', 'local'],
     };
-    const votos = votar(registros, c);
+    // Con la pista marcada (camara fija) se vota por toques; sin ella, por cercania.
+    const e = editor.estado;
+    const pista = e?.pista ?? null;
+    const porToques = pista !== null && video.videoWidth > 0;
+    const votos = porToques && e ? votosPorToques(registros, e.fragmentos, pista, video.videoWidth, video.videoHeight, c) : votar(registros, c);
     botonesColor.forEach((b, i) => b.setAttribute('aria-pressed', String(i === grupo)));
     editor.cambiar(
-      (e) => aplicarEquipos(e, votos, partir.checked, () => crypto.randomUUID()),
+      (actual) => aplicarEquipos(actual, votos, partir.checked, () => crypto.randomUUID()),
       (nuevo) => resumenEquipos(nuevo.fragmentos),
       'Los equipos ya estaban así.',
     );
-    decir(resumenEquipos(editor.estado?.fragmentos ?? []));
+    const resumen = resumenEquipos(editor.estado?.fragmentos ?? []);
+    decir(porToques ? `${resumen} Con la pista marcada, la posesión se mide por toques.` : resumen);
   }
 
   botonBuscar.addEventListener('click', () => void buscar());

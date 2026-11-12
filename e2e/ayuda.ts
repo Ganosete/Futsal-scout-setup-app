@@ -83,3 +83,21 @@ export async function abrirComoJugador(browser: Browser, url: string): Promise<{
   await pagina.goto(url);
   return { pagina, errores };
 }
+
+export interface PuntoImagen {
+  x: number;
+  y: number;
+}
+
+/** Abre «La pista» si hace falta y pulsa las cuatro esquinas, normalizadas sobre el fotograma. */
+export async function marcarPista(page: Page, clics: PuntoImagen[]): Promise<void> {
+  if (!(await page.locator('#pista-equipos').evaluate((d: HTMLDetailsElement) => d.open))) {
+    await page.getByText('La pista, si la cámara no se mueve').click();
+  }
+  await page.getByRole('button', { name: /^Marcar (las esquinas|otra vez)$/ }).click();
+  const capa = page.locator('.capa-pista');
+  await expect(capa).toBeVisible();
+  const caja = await capa.boundingBox();
+  if (!caja) throw new Error('La capa de la pista no se ve');
+  for (const p of clics) await capa.click({ position: { x: p.x * caja.width, y: p.y * caja.height } });
+}

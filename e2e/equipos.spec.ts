@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
-import { EQUIPOS, esperarGuardado, esperarSubida, expect, fixture, subirYAnalizar, test } from './ayuda';
+import { EQUIPOS, esperarGuardado, esperarSubida, expect, fixture, marcarPista, subirYAnalizar, test } from './ayuda';
 
 // «Quién ataca» con el detector de juguete (tools/crear_modelo_prueba.py): la
 // misma firma que RF-DETR Nano, y siempre dos jugadores con el balon a los pies
@@ -69,4 +69,25 @@ test('lo puesto a mano no lo toca el detector, y al volver otro día basta con c
   await page.reload();
   await expect(page.locator('#pregunta-equipos')).toHaveText(`¿Qué camiseta lleva ${EQUIPOS.local}?`, { timeout: 20_000 });
   await expect(page.locator('#estado-equipos')).toHaveText('Ya se buscó quién ataca en este partido: contesta la pregunta para poner los equipos.');
+});
+
+test('con la pista marcada, la posesión se mide por toques', async ({ page }) => {
+  await conDetectorDePrueba(page);
+  await subirYAnalizar(page, 'analisis.mp4');
+  await esperarSubida(page);
+  await esperarGuardado(page);
+  await marcarPista(page, [
+    { x: 0.1, y: 0.9 },
+    { x: 0.9, y: 0.9 },
+    { x: 0.8, y: 0.2 },
+    { x: 0.2, y: 0.2 },
+  ]);
+  await page.getByRole('button', { name: 'Buscar quién ataca' }).click();
+  await expect(page.locator('.boton-color').first()).toBeVisible({ timeout: 60_000 });
+  await page.locator('.boton-color').first().click();
+  // El balon de juguete nunca se mueve: no hay toques, y en cada fragmento vale el mas cercano.
+  expect(new Set(await equipos(page)).size).toBe(1);
+  await expect(page.locator('#estado-equipos')).toHaveText(
+    'Equipos puestos: 2 fragmentos con equipo y ninguno sin decidir. Con la pista marcada, la posesión se mide por toques.',
+  );
 });

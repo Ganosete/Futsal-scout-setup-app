@@ -1,32 +1,18 @@
 import type { Page } from '@playwright/test';
-import { esperarGuardado, esperarSubida, expect, subirYAnalizar, test } from './ayuda';
+import { esperarGuardado, esperarSubida, expect, marcarPista, subirYAnalizar, test, type PuntoImagen } from './ayuda';
 
 // La pista marcada con cuatro clics sobre el video del editor: se ordenan
 // solas, se guardan con la edicion y se deshacen como lo demas.
 
-interface Punto {
-  x: number;
-  y: number;
-}
-
 /** Las esquinas de una pista vista de lado, en el orden en que se pulsan (cualquiera vale). */
-const CLICS: Punto[] = [
+const CLICS: PuntoImagen[] = [
   { x: 0.25, y: 0.3 },
   { x: 0.9, y: 0.9 },
   { x: 0.1, y: 0.9 },
   { x: 0.75, y: 0.3 },
 ];
 
-async function marcar(page: Page, clics: Punto[]): Promise<void> {
-  await page.getByRole('button', { name: /^Marcar (las esquinas|otra vez)$/ }).click();
-  const capa = page.locator('.capa-pista');
-  await expect(capa).toBeVisible();
-  const caja = await capa.boundingBox();
-  if (!caja) throw new Error('La capa de la pista no se ve');
-  for (const p of clics) await capa.click({ position: { x: p.x * caja.width, y: p.y * caja.height } });
-}
-
-async function edicionGuardada(page: Page): Promise<{ pista: { esquinas: Punto[]; medidas: { largo: number; ancho: number } } | null }> {
+async function edicionGuardada(page: Page): Promise<{ pista: { esquinas: PuntoImagen[]; medidas: { largo: number; ancho: number } } | null }> {
   const id = new URL(page.url()).hash.replace('#partido=', '');
   return page.evaluate(async (partido) => (await fetch(`/api/partidos/${partido}/edicion`)).json(), id);
 }
@@ -35,11 +21,10 @@ test.beforeEach(async ({ page }) => {
   await subirYAnalizar(page, 'analisis.mp4');
   await esperarSubida(page);
   await esperarGuardado(page);
-  await page.getByText('La pista, si la cámara no se mueve').click();
 });
 
 test('cuatro clics en cualquier orden marcan la pista, que se guarda y sigue al volver', async ({ page }) => {
-  await marcar(page, CLICS);
+  await marcarPista(page, CLICS);
   await expect(page.locator('#estado-editor')).toHaveText('Pista marcada.');
   await expect(page.locator('#resumen-pista')).toHaveText('· marcada, 40 × 20 m');
   await expect(page.locator('.capa-pista .pista-contorno')).toHaveCount(1);
@@ -59,7 +44,7 @@ test('cuatro clics en cualquier orden marcan la pista, que se guarda y sigue al 
 });
 
 test('las medidas se cambian y la pista se quita o se deshace', async ({ page }) => {
-  await marcar(page, CLICS);
+  await marcarPista(page, CLICS);
   await page.locator('#largo-pista').fill('38');
   await page.locator('#largo-pista').press('Tab');
   await expect(page.locator('#resumen-pista')).toHaveText('· marcada, 38 × 20 m');
@@ -82,7 +67,7 @@ test('las medidas se cambian y la pista se quita o se deshace', async ({ page })
 
 test('un área mal marcada lo dice y deja marcar otra vez', async ({ page }) => {
   // La cuarta esquina cae dentro del triangulo de las otras tres.
-  await marcar(page, [CLICS[0], CLICS[2], CLICS[3], { x: 0.35, y: 0.45 }]);
+  await marcarPista(page, [CLICS[0], CLICS[2], CLICS[3], { x: 0.35, y: 0.45 }]);
   await expect(page.locator('#estado-pista')).toContainText('no es convexa');
   await expect(page.getByRole('button', { name: 'Cancelar' })).toBeVisible();
   const capa = page.locator('.capa-pista');

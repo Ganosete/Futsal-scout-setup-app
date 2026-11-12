@@ -1,5 +1,4 @@
-import type { Page } from '@playwright/test';
-import { esperarGuardado, esperarSubida, expect, filas, subirYAnalizar, test } from './ayuda';
+import { esperarGuardado, esperarSubida, expect, filas, marcarPista, subirYAnalizar, test } from './ayuda';
 
 // El balon fuera con la pista marcada. Las detecciones se sirven hechas a mano
 // (el detector de juguete siempre ve lo mismo): el balon va hacia una banda
@@ -36,16 +35,6 @@ const ESQUINAS = [
   { x: 0.1, y: 0.1 },
 ];
 
-async function marcarPista(page: Page): Promise<void> {
-  await page.getByText('La pista, si la cámara no se mueve').click();
-  await page.getByRole('button', { name: 'Marcar las esquinas' }).click();
-  const capa = page.locator('.capa-pista');
-  const c = await capa.boundingBox();
-  if (!c) throw new Error('La capa de la pista no se ve');
-  for (const p of ESQUINAS) await capa.click({ position: { x: p.x * c.width, y: p.y * c.height } });
-  await expect(page.locator('#resumen-pista')).toHaveText('· marcada, 40 × 20 m');
-}
-
 test.beforeEach(async ({ page }) => {
   await page.route('**/api/partidos/*/detecciones', (r) =>
     r.request().method() === 'GET' ? r.fulfill({ json: { version: 1, registros: REGISTROS } }) : r.continue(),
@@ -61,7 +50,8 @@ test('sin la pista marcada no se buscan balones fuera', async ({ page }) => {
 });
 
 test('con la pista marcada, se ve la salida y se quita de la salida al saque', async ({ page }) => {
-  await marcarPista(page);
+  await marcarPista(page, ESQUINAS);
+  await expect(page.locator('#resumen-pista')).toHaveText('· marcada, 40 × 20 m');
   await expect(page.locator('#texto-fuera')).toHaveText(/^Se ha visto salir el balón una vez dentro de los fragmentos: \d s de balón parado\.$/);
   await page.getByRole('button', { name: 'Quitar los balones fuera' }).click();
 
