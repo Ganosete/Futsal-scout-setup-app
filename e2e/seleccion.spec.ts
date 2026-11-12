@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
+import { BufferSource, Input, MP4 } from 'mediabunny';
 import { abrirComoJugador, esperarGuardado, esperarSubida, expect, subirYAnalizar, test } from './ayuda';
 
 // «Mi selección»: estrellas en los fragmentos para la charla. analisis.mp4 da
@@ -66,5 +68,47 @@ test('la selección se guarda y los jugadores la ven y la filtran', async ({ pag
   await pagina.getByRole('button', { name: 'Ver solo la selección del entrenador' }).click();
   await expect(jugadas).toHaveCount(1);
   await expect(jugadas.locator('.fragmento-numero')).toHaveText('2');
+
+  // El jugador tambien puede bajarse la seleccion entera.
+  const llega = pagina.waitForEvent('download');
+  await pagina.getByRole('button', { name: 'Descargar la selección' }).click();
+  expect((await llega).suggestedFilename()).toMatch(/^atletico-benavente-peniscola-\d{4}-\d{2}-\d{2}-seleccion\.mp4$/);
   expect(errores).toEqual([]);
+});
+
+test('el vídeo de la selección: las jugadas con estrella, seguidas en un MP4 que se puede ver', async ({ page }) => {
+  await expect(page.getByRole('button', { name: 'Descargar la selección' })).toBeDisabled();
+  for (const i of [0, 1]) await page.locator('#lista-fragmentos .fragmento').nth(i).getByRole('button', { name: 'En mi selección' }).click();
+  const llega = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Descargar la selección' }).click();
+  const descarga = await llega;
+  expect(descarga.suggestedFilename()).toMatch(/-seleccion\.mp4$/);
+  await expect(page.locator('#estado-editor')).toContainText('Descargado:');
+
+  // Cada jugada empieza en su fotograma clave (uno por segundo): [0, 19,98) sale de 0 a 20 s
+  // y [30, 60) de 30 a 60 s. Juntas, 50 s; como en el recorte, quiza un fotograma de mas.
+  const bytes = readFileSync(await descarga.path());
+  const entrada = new Input({ source: new BufferSource(new Uint8Array(bytes).buffer), formats: [MP4] });
+  const duracion = await entrada.computeDuration();
+  entrada.dispose();
+  expect(duracion).toBeGreaterThanOrEqual(49.995);
+  expect(duracion).toBeLessThanOrEqual(50.1);
+
+  // Y el navegador lo decodifica: se carga y se puede ir a la segunda jugada (a los 25 s del video).
+  const sePuedeVer = await page.evaluate(async (datos) => {
+    const v = document.createElement('video');
+    v.muted = true;
+    v.src = URL.createObjectURL(new Blob([new Uint8Array(datos)], { type: 'video/mp4' }));
+    await new Promise<void>((listo, fallo) => {
+      v.addEventListener('loadeddata', () => listo(), { once: true });
+      v.addEventListener('error', () => fallo(new Error('no carga')), { once: true });
+    });
+    await new Promise<void>((listo) => {
+      v.addEventListener('seeked', () => listo(), { once: true });
+      v.currentTime = 25;
+    });
+    return { duracion: v.duration, listo: v.readyState >= 2 };
+  }, Array.from(bytes));
+  expect(sePuedeVer.listo).toBe(true);
+  expect(sePuedeVer.duracion).toBeGreaterThan(49.9);
 });

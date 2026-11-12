@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aSlug, instanteEnNombre, nombreClip } from '../../src/cliente/descarga/nombre';
+import { aSlug, instanteEnNombre, nombreClip, nombreSeleccion } from '../../src/cliente/descarga/nombre';
 
 describe('aSlug', () => {
   it('sin tildes, en minúsculas y con guiones', () => {
@@ -30,5 +30,14 @@ describe('nombreClip', () => {
 
   it('sin datos del partido sigue saliendo un nombre que vale', () => {
     expect(nombreClip({ local: '', visitante: '', fecha: '' }, 12, 61)).toBe('partido-jugada-12-1m01s.mp4');
+  });
+});
+
+describe('nombreSeleccion', () => {
+  it('los equipos, la fecha y «seleccion»; sin datos, «partido»', () => {
+    expect(nombreSeleccion({ local: 'Castillo de Requena FS', visitante: 'Feme Castellón', fecha: '2026-11-08' })).toBe(
+      'castillo-de-requena-fs-feme-castellon-2026-11-08-seleccion.mp4',
+    );
+    expect(nombreSeleccion({ local: '', visitante: '', fecha: '' })).toBe('partido-seleccion.mp4');
   });
 });

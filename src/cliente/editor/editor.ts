@@ -4,7 +4,7 @@ import type { Intervalo } from '../../nucleo/balonParado/tramos';
 import type { Fragmento } from '../../nucleo/fragmentos';
 import { textoEquipos, textoPartes, textoResumen, type Nombres } from '../analisis/resumen';
 import { BarraFiltros } from '../barraFiltros';
-import { crearDescargador } from '../descarga/accion';
+import { crearDescargas } from '../descarga/accion';
 import type { DatosNombre } from '../descarga/nombre';
 import { el } from '../dom';
 import { accionDeTecla, esAccion, teclaAjena, type Accion } from './atajos';
@@ -48,7 +48,7 @@ export interface Editor {
   cambiar: (transformar: (e: EstadoEditor) => EstadoEditor | null, hecho: (e: EstadoEditor) => string, imposible: string) => void;
 }
 
-type AccionEditor = Accion | 'verTodo';
+type AccionEditor = Accion | 'verTodo' | 'descargarSeleccion';
 
 const SALTO_SEG = 2;
 const SALTO_FINO_SEG = 0.2;
@@ -77,7 +77,7 @@ export function crearEditor(): Editor {
   const avisar = (mensaje: string): void => {
     estadoTexto.textContent = mensaje;
   };
-  const descargar = crearDescargador(avisar);
+  const descargas = crearDescargas(avisar);
 
   const linea = new LineaTiempo(el('linea-analisis'), (t) => {
     const e = actual();
@@ -151,6 +151,7 @@ export function crearEditor(): Editor {
       const a = b.dataset.accion;
       if (a === 'local' || a === 'visitante') b.setAttribute('aria-pressed', String((elegido?.equipo ?? null) === a));
       if (a === 'estrella') b.setAttribute('aria-pressed', String(elegido?.estrella === true));
+      if (a === 'descargarSeleccion') b.disabled = !haySeleccion;
       if (a === 'deshacer') b.disabled = !historial?.puedeDeshacer;
       if (a === 'rehacer') b.disabled = !historial?.puedeRehacer;
     }
@@ -194,7 +195,9 @@ export function crearEditor(): Editor {
       case 'verFragmento':
         return f ? reproductor.verFragmento(f) : undefined;
       case 'descargar':
-        return f && origen ? void descargar(origen, f, numero(e, f.id), partido) : undefined;
+        return f && origen ? void descargas.fragmento(origen, f, numero(e, f.id), partido) : undefined;
+      case 'descargarSeleccion':
+        return origen ? void descargas.seleccion(origen, enSeleccion(e.fragmentos), partido) : undefined;
       case 'verTodo':
         return reproductor.verTodo(() => {
           const ahora = actual();
@@ -232,7 +235,7 @@ export function crearEditor(): Editor {
 
   barra.addEventListener('click', (ev) => {
     const a = (ev.target as HTMLElement).closest<HTMLButtonElement>('button[data-accion]')?.dataset.accion;
-    if (a === 'verTodo' || esAccion(a)) ejecutar(a);
+    if (a === 'verTodo' || a === 'descargarSeleccion' || esAccion(a)) ejecutar(a);
   });
 
   document.addEventListener('keydown', (ev) => {

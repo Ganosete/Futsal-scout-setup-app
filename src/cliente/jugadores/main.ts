@@ -7,7 +7,7 @@ import '../estilos/jugadores.css';
 import type { JugadaCompartida, PartidoCompartido } from '../../comun/compartido';
 import { filtrar, pasaFiltro } from '../../comun/filtros';
 import { BarraFiltros } from '../barraFiltros';
-import { crearDescargador } from '../descarga/accion';
+import { crearDescargas } from '../descarga/accion';
 import { el } from '../dom';
 import { Reproductor } from '../editor/reproductor';
 import { tituloPartido } from '../partido/textos';
@@ -26,7 +26,7 @@ const estado = el<HTMLParagraphElement>('estado-compartido');
 const bloque = el<HTMLElement>('bloque-jugadas');
 const aviso = el<HTMLParagraphElement>('estado-jugadas');
 const reproductor = new Reproductor(el<HTMLVideoElement>('video-jugadores'));
-const descargar = crearDescargador((m) => (aviso.textContent = m));
+const descargas = crearDescargas((m) => (aviso.textContent = m));
 
 let partido: PartidoCompartido | null = null;
 let seleccionada: string | null = null;
@@ -82,7 +82,9 @@ el('barra-jugadores').addEventListener('click', (e) => {
   else if (accion === 'verTodo') reproductor.verTodo(jugadas);
   else if (accion === 'descargar') {
     const j = actual();
-    if (j && partido && origen) void descargar(origen, j, partido.jugadas.indexOf(j) + 1, partido);
+    if (j && partido && origen) void descargas.fragmento(origen, j, partido.jugadas.indexOf(j) + 1, partido);
+  } else if (accion === 'descargarSeleccion' && partido && origen) {
+    void descargas.seleccion(origen, partido.jugadas.filter((j) => j.estrella === true), partido);
   }
 });
 
@@ -124,6 +126,7 @@ async function iniciar(): Promise<void> {
     partido.jugadas.some((j) => j.equipo !== null),
     partido.jugadas.some((j) => j.estrella === true),
   );
+  el<HTMLButtonElement>('btn-seleccion-jugadores').hidden = !partido.jugadas.some((j) => j.estrella === true);
   reproductor.cargar(origen);
   bloque.hidden = false;
   pintar();
