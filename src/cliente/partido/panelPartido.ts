@@ -141,6 +141,7 @@ export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
       alCambiar: (e) => {
         g?.cambiar(edicionDeEstado(e, edicion.tramos));
         pista.pintar(e.pista);
+        equipos.actualizar();
       },
     });
     equipos.abrir({ origen, idPartido: id, nombres: nombre });

@@ -9,6 +9,7 @@ import { el } from '../dom';
 import type { Editor } from '../editor/editor';
 import { aplicarEquipos } from '../editor/equiposAuto';
 import { Barra } from '../partido/barra';
+import { BloqueFuera } from './bloqueFuera';
 import { detectarEquipos, type DeteccionEnCurso } from './cliente';
 import { obtenerModelo } from './modelo';
 
@@ -28,6 +29,8 @@ export interface DatosEquipos {
 export interface PanelEquipos {
   abrir: (d: DatosEquipos) => void;
   cerrar: () => void;
+  /** Ha cambiado el estado del editor (la pista, los fragmentos): lo que dependa de el se vuelve a pintar. */
+  actualizar: () => void;
 }
 
 export function resumenEquipos(fragmentos: readonly Fragmento[]): string {
@@ -47,6 +50,7 @@ export function crearPanelEquipos(editor: Editor): PanelEquipos {
   const pregunta = el<HTMLParagraphElement>('pregunta-equipos');
   const partir = el<HTMLInputElement>('partir-posesion');
   const botonesColor = [...colores.querySelectorAll<HTMLButtonElement>('.boton-color')];
+  const fuera = new BloqueFuera(editor);
 
   let datos: DatosEquipos | null = null;
   let registros: RegistroFotograma[] = [];
@@ -68,6 +72,8 @@ export function crearPanelEquipos(editor: Editor): PanelEquipos {
   /** Con las detecciones, los dos colores y la pregunta. */
   function preparar(nuevos: RegistroFotograma[], local: string): void {
     registros = nuevos;
+    // El balon fuera no depende de los colores: sale aunque los equipos no se distingan.
+    fuera.usar(nuevos);
     reparto = repartirColores(registros);
     colores.hidden = true;
     if (!reparto) return decir('No se han visto bastantes jugadores cerca del balón para distinguir los equipos.');
@@ -171,6 +177,7 @@ export function crearPanelEquipos(editor: Editor): PanelEquipos {
     datos = null;
     registros = [];
     reparto = null;
+    fuera.usar([]);
     enMarcha(false);
     colores.hidden = true;
     decir('');
@@ -197,5 +204,6 @@ export function crearPanelEquipos(editor: Editor): PanelEquipos {
       }
     },
     cerrar,
+    actualizar: () => fuera.pintar(),
   };
 }
