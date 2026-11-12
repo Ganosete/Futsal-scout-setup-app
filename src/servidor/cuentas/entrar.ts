@@ -44,7 +44,9 @@ export function crearEntrar(inyectado?: Cartero): { pedirCodigo: Manejador<Env>;
     if (!origenPermitido(peticion)) return error(403, 'Esta petición no viene de Futsal Scout.');
     const email = leerEmail(((await leerJson(peticion, 2048)) as { email?: unknown } | null)?.email);
     if (!email) throw new FalloApi(400, 'Escribe un email válido.');
-    const local = esLocal(peticion) && !hayCartero(env);
+    // En localhost el codigo va siempre en la respuesta, aunque haya binding de correo: Miniflare
+    // no lo manda a nadie, y asi las pruebas no dependen de como este configurado.
+    const local = esLocal(peticion);
     if (!local && !hayCartero(env)) throw new FalloApi(503, 'Las altas por email aún no están activas en esta web.');
     const ahora = new Date();
     const previo = await leerCodigo(env.BD, email);
