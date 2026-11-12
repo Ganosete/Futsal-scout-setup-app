@@ -18,6 +18,8 @@ export interface Fragmento {
   equipo: Equipo | null;
   /** Lo ha tocado el entrenador: un analisis nuevo no lo pisa. */
   manual: boolean;
+  /** En «Mi selección» del entrenador. Sin marcar, no se guarda. */
+  estrella?: boolean;
 }
 
 /** Por debajo de esto un trozo de juego se une al fragmento vecino. */

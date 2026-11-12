@@ -61,6 +61,14 @@ describe('leerEdicion', () => {
     expect(leerEdicion({ ...BIEN, correcciones: [{ tipo: 'borrar-todo', antes: [], despues: [] }] })).toBeNull();
   });
 
+  it('la estrella de la seleccion se lee si es true; si es false no se guarda, y si no es un booleano no vale', () => {
+    const leida = leerEdicion({ ...BIEN, fragmentos: [{ ...F1, estrella: true }, { ...F2, estrella: false }] });
+    expect(leida?.fragmentos[0]).toEqual({ ...F1, estrella: true });
+    expect(leida?.fragmentos[1]).toEqual(F2);
+    expect(Object.keys(leida?.fragmentos[1] ?? {})).not.toContain('estrella');
+    expect(leerEdicion({ ...BIEN, fragmentos: [{ ...F1, estrella: 'si' }] })).toBeNull();
+  });
+
   it('una edicion de antes, sin pista, se lee con la pista a null', () => {
     const { pista: _, ...sinPista } = BIEN;
     expect(leerEdicion(sinPista)).toEqual(BIEN);

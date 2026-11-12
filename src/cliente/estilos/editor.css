@@ -214,7 +214,7 @@
 
 .fragmento {
   display: grid;
-  grid-template-columns: 3ch 6.5em 1fr auto auto auto;
+  grid-template-columns: 3ch 6.5em 1fr auto auto auto auto;
   gap: 10px;
   align-items: center;
   padding: 6px 12px;
@@ -275,13 +275,23 @@
   border-color: var(--equipo-visitante);
 }
 
+/* La estrella de «Mi selección»: sin borde, para que no se confunda con los equipos. */
+.chip-estrella {
+  font-size: 1.1rem;
+  border-color: transparent;
+}
+
+.chip-estrella[aria-pressed='true'] {
+  color: var(--acento);
+}
+
 .atajos {
   font-size: 0.8rem;
 }
 
 @media (max-width: 560px) {
   .fragmento {
-    grid-template-columns: 3ch 1fr auto auto;
+    grid-template-columns: 3ch 1fr auto auto auto;
   }
 
   .fragmento-parte,

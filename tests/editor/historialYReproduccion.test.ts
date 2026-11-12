@@ -84,6 +84,7 @@ describe('accionDeTecla', () => {
     expect(accionDeTecla(tecla('i'))).toBe('inicioAqui');
     expect(accionDeTecla(tecla('f'))).toBe('finAqui');
     expect(accionDeTecla(tecla('d'))).toBe('descargar');
+    expect(accionDeTecla(tecla('s'))).toBe('estrella');
   });
 
   it('flechas: con Mayúsculas, el salto fino', () => {

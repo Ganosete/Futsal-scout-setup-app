@@ -11,6 +11,8 @@ export interface OpcionesBarraFiltros {
   alCambiar: (f: Filtro) => void;
   /** «Sin equipo» le sirve al entrenador para revisar; a un jugador, no. */
   conSinEquipo: boolean;
+  /** Como se llama la seleccion: «Mi selección» para el entrenador, la suya para los jugadores. */
+  textoSeleccion: string;
 }
 
 export class BarraFiltros {
@@ -30,8 +32,9 @@ export class BarraFiltros {
       const b = (e.target as HTMLElement).closest<HTMLButtonElement>('button[data-filtro]');
       if (!b) return;
       const v = b.dataset.valor ?? '';
-      this.actual =
-        b.dataset.filtro === 'equipo' ? { ...this.actual, equipo: v as FiltroEquipo } : { ...this.actual, parte: v === '1' ? 1 : v === '2' ? 2 : 'todas' };
+      if (b.dataset.filtro === 'seleccion') this.actual = { ...this.actual, seleccion: !this.actual.seleccion };
+      else if (b.dataset.filtro === 'equipo') this.actual = { ...this.actual, equipo: v as FiltroEquipo };
+      else this.actual = { ...this.actual, parte: v === '1' ? 1 : v === '2' ? 2 : 'todas' };
       this.marcar();
       this.o.alCambiar(this.actual);
     });
@@ -43,11 +46,11 @@ export class BarraFiltros {
 
   /**
    * Los botones, con los nombres de los equipos. Sin segunda parte no hay
-   * filtro de partes, y sin equipos puestos (en la pagina de los jugadores),
-   * tampoco de equipos.
+   * filtro de partes; sin equipos puestos (en la pagina de los jugadores),
+   * tampoco de equipos, y sin estrellas, tampoco de la seleccion.
    */
-  pintar(nombres: Nombres, conPartes: boolean, conEquipos = true): void {
-    const grupo = (etiqueta: string, filtro: 'equipo' | 'parte', opciones: [string, string][]): HTMLDivElement => {
+  pintar(nombres: Nombres, conPartes: boolean, conEquipos = true, conSeleccion = false): void {
+    const grupo = (etiqueta: string, filtro: 'equipo' | 'parte' | 'seleccion', opciones: [string, string][]): HTMLDivElement => {
       const g = crear('div', 'filtros-grupo');
       g.setAttribute('role', 'group');
       g.setAttribute('aria-label', etiqueta);
@@ -56,6 +59,8 @@ export class BarraFiltros {
         b.type = 'button';
         b.dataset.filtro = filtro;
         b.dataset.valor = valor;
+        // La barra del editor tiene otro «Mi selección», que pone la estrella: este solo filtra.
+        if (filtro === 'seleccion') b.setAttribute('aria-label', `Ver solo ${this.o.textoSeleccion.charAt(0).toLowerCase()}${this.o.textoSeleccion.slice(1)}`);
         g.append(b);
       }
       return g;
@@ -67,6 +72,7 @@ export class BarraFiltros {
       ...(this.o.conSinEquipo ? ([['ninguno', 'Sin equipo']] as [string, string][]) : []),
     ];
     this.grupos.replaceChildren(
+      ...(conSeleccion ? [grupo('Ver la selección', 'seleccion', [['si', `★ ${this.o.textoSeleccion}`]])] : []),
       ...(conEquipos ? [grupo('Ver por equipo', 'equipo', equipos)] : []),
       ...(conPartes
         ? [
@@ -80,6 +86,7 @@ export class BarraFiltros {
     );
     if (!conPartes && this.actual.parte !== 'todas') this.actual = { ...this.actual, parte: 'todas' };
     if (!conEquipos && this.actual.equipo !== 'todos') this.actual = { ...this.actual, equipo: 'todos' };
+    if (!conSeleccion && this.actual.seleccion) this.actual = { ...this.actual, seleccion: false };
     this.marcar();
   }
 
@@ -95,6 +102,10 @@ export class BarraFiltros {
 
   private marcar(): void {
     for (const b of this.grupos.querySelectorAll<HTMLButtonElement>('button[data-filtro]')) {
+      if (b.dataset.filtro === 'seleccion') {
+        b.setAttribute('aria-pressed', String(this.actual.seleccion));
+        continue;
+      }
       const actual = b.dataset.filtro === 'equipo' ? this.actual.equipo : String(this.actual.parte);
       b.setAttribute('aria-pressed', String(b.dataset.valor === actual));
     }

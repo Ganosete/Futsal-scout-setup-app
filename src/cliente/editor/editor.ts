@@ -1,7 +1,7 @@
 import { filtrar, pasaFiltro } from '../../comun/filtros';
 import { formatearDuracion } from '../../comun/formato';
 import type { Intervalo } from '../../nucleo/balonParado/tramos';
-import type { Equipo, Fragmento } from '../../nucleo/fragmentos';
+import type { Fragmento } from '../../nucleo/fragmentos';
 import { textoEquipos, textoPartes, textoResumen, type Nombres } from '../analisis/resumen';
 import { BarraFiltros } from '../barraFiltros';
 import { crearDescargador } from '../descarga/accion';
@@ -12,8 +12,9 @@ import { Historial } from './historial';
 import { aplicarPartes, moverBordeParte, type Borde } from './limitesPartes';
 import { LineaTiempo } from './lineaTiempo';
 import { ListaFragmentos } from './listaFragmentos';
-import { corregir } from './correcciones';
-import { fragmentoEn, ponerEquipo, type EstadoEditor } from './operaciones';
+import { corregir, type Cambio } from './correcciones';
+import { enSeleccion, marcar } from './marcas';
+import { fragmentoEn, type EstadoEditor } from './operaciones';
 import { PanelPartes } from './panelPartes';
 import { Reproductor } from './reproductor';
 
@@ -89,13 +90,18 @@ export function crearEditor(): Editor {
     alElegir: (id) => elegir(id),
     alEquipo: (id, equipo) => {
       seleccionado = id;
-      alternarEquipo(equipo);
+      ejecutar(equipo);
+    },
+    alEstrella: (id) => {
+      seleccionado = id;
+      ejecutar('estrella');
     },
     nombres,
   });
   const panelPartes = new PanelPartes(el('partes-editor'), (numero, borde) => moverParte(numero, borde));
   const filtros = new BarraFiltros(el('filtros-editor'), {
     conSinEquipo: true,
+    textoSeleccion: 'Mi selección',
     alCambiar: () => {
       // Si el elegido queda fuera del filtro, se pasa al primero que se ve.
       const e = actual();
@@ -103,8 +109,8 @@ export function crearEditor(): Editor {
       pintar();
     },
   });
-  /** Cuantas partes habia la ultima vez que se pintaron los filtros: sin segunda parte no hay filtro de partes. */
-  let partesPintadas = 0;
+  /** Con que se pintaron los filtros: sin segunda parte no hay filtro de partes, ni sin estrellas el de la seleccion. */
+  let filtrosPintados = '';
   const visibles = (e: EstadoEditor) => filtrar(e.fragmentos, filtros.filtro);
 
   function moverParte(numero: 1 | 2, borde: Borde): void {
@@ -133,16 +139,18 @@ export function crearEditor(): Editor {
     const visible = (f: Fragmento): boolean => pasaFiltro(f, filtros.filtro);
     linea.pintar(e, seleccionado, visible);
     linea.moverCabezal(reproductor.tiempo);
-    if (e.partes.length !== partesPintadas) {
-      partesPintadas = e.partes.length;
-      filtros.pintar(nombres(), e.partes.length > 1);
+    const haySeleccion = enSeleccion(e.fragmentos).length > 0;
+    if (`${e.partes.length}|${haySeleccion}` !== filtrosPintados) {
+      filtrosPintados = `${e.partes.length}|${haySeleccion}`;
+      filtros.pintar(nombres(), e.partes.length > 1, true, haySeleccion);
     }
     filtros.contar(visibles(e).length, e.fragmentos.length);
     lista.pintar(e.fragmentos, seleccionado, visible);
-    const equipo = e.fragmentos.find((f) => f.id === seleccionado)?.equipo ?? null;
+    const elegido = e.fragmentos.find((f) => f.id === seleccionado);
     for (const b of barra.querySelectorAll<HTMLButtonElement>('button[data-accion]')) {
       const a = b.dataset.accion;
-      if (a === 'local' || a === 'visitante') b.setAttribute('aria-pressed', String(equipo === a));
+      if (a === 'local' || a === 'visitante') b.setAttribute('aria-pressed', String((elegido?.equipo ?? null) === a));
+      if (a === 'estrella') b.setAttribute('aria-pressed', String(elegido?.estrella === true));
       if (a === 'deshacer') b.disabled = !historial?.puedeDeshacer;
       if (a === 'rehacer') b.disabled = !historial?.puedeRehacer;
     }
@@ -167,13 +175,12 @@ export function crearEditor(): Editor {
     lista.mostrar(id);
   }
 
-  function alternarEquipo(equipo: Equipo): void {
-    const e = actual();
-    const f = e?.fragmentos.find((x) => x.id === seleccionado);
-    if (!e || !f) return;
-    const nuevo = f.equipo === equipo ? null : equipo;
-    const n = numero(e, f.id);
-    aplicar(ponerEquipo(e, f.id, nuevo), () => (nuevo ? `Fragmento ${n}: ataca ${nombres()[nuevo]}.` : `Fragmento ${n}: sin equipo.`), '');
+  /** Un cambio de la barra (una correccion o una marca), con su aviso. */
+  function aplicarCambio(c: Cambio): void {
+    if (c.tipo === 'aviso') return avisar(c.mensaje);
+    if (c.tipo === 'nada') return;
+    seleccionado = c.seleccionado;
+    aplicar(c.nuevo, c.hecho, c.imposible);
   }
 
   function ejecutar(accion: AccionEditor): void {
@@ -209,7 +216,8 @@ export function crearEditor(): Editor {
       }
       case 'local':
       case 'visitante':
-        return alternarEquipo(accion);
+      case 'estrella':
+        return aplicarCambio(marcar(accion, e, seleccionado, nombres()));
       case 'deshacer':
       case 'rehacer': {
         const hecho = accion === 'deshacer' ? historial.deshacer() : historial.rehacer();
@@ -217,13 +225,8 @@ export function crearEditor(): Editor {
         if (hecho) alCambiar(historial.estado);
         return avisar(hecho ? (accion === 'deshacer' ? 'Deshecho.' : 'Rehecho.') : 'No hay nada que ' + accion + '.');
       }
-      default: {
-        const c = corregir(accion, e, seleccionado, t, () => crypto.randomUUID());
-        if (c.tipo === 'aviso') return avisar(c.mensaje);
-        if (c.tipo === 'nada') return;
-        seleccionado = c.seleccionado;
-        return aplicar(c.nuevo, c.hecho, c.imposible);
-      }
+      default:
+        return aplicarCambio(corregir(accion, e, seleccionado, t, () => crypto.randomUUID()));
     }
   }
 
@@ -262,7 +265,7 @@ export function crearEditor(): Editor {
       alCambiar = d.alCambiar ?? (() => undefined);
       seleccionado = d.inicial.fragmentos[0]?.id ?? null;
       filtros.reiniciar();
-      partesPintadas = 0;
+      filtrosPintados = '';
       reproductor.cargar(d.origen);
       contenedor.hidden = false;
       avisar('');

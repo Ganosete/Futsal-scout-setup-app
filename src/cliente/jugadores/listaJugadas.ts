@@ -31,16 +31,20 @@ export class ListaJugadas {
         li.dataset.desde = f.desdeSeg.toFixed(2);
         li.dataset.hasta = f.hastaSeg.toFixed(2);
         li.dataset.equipo = f.equipo ?? '';
+        const jugada = porId.get(f.id) ?? p.jugadas[0];
+        if (jugada.estrella) li.dataset.estrella = '';
         if (f.id === seleccionada) li.setAttribute('aria-current', 'true');
         const boton = crear('button', 'jugada-boton');
         boton.type = 'button';
-        const equipo = equipoDeJugada(porId.get(f.id) ?? p.jugadas[0], p);
-        boton.setAttribute('aria-label', `Jugada ${f.numero}, ${f.parte}, ${f.rango}${equipo ? `, ataca ${equipo}` : ''}`);
+        const equipo = equipoDeJugada(jugada, p);
+        const seleccion = jugada.estrella ? ', en la selección del entrenador' : '';
+        boton.setAttribute('aria-label', `Jugada ${f.numero}, ${f.parte}, ${f.rango}${equipo ? `, ataca ${equipo}` : ''}${seleccion}`);
         boton.append(
           crear('span', 'fragmento-numero', String(f.numero)),
           crear('span', 'fragmento-parte', f.parte),
           crear('span', 'fragmento-rango', f.rango),
           crear('span', 'fragmento-duracion', f.duracion),
+          crear('span', 'jugada-estrella', jugada.estrella ? '★' : ''),
           crear('span', 'jugada-equipo', equipo),
         );
         li.append(boton);

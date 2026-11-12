@@ -9,12 +9,20 @@ const EDICION: Edicion = {
   duracion: 60,
   partes: [{ numero: 1, desde: 0, hasta: 60 }],
   fragmentos: [
-    { id: 'a', desde: 0, hasta: 19.98, parte: 1, equipo: 'local', manual: true },
+    { id: 'a', desde: 0, hasta: 19.98, parte: 1, equipo: 'local', manual: true, estrella: true },
     { id: 'b', desde: 30, hasta: 60, parte: 1, equipo: null, manual: false },
   ],
   correcciones: [{ tipo: 'equipo', antes: [], despues: [] }],
   tramos: [{ desde: 19.98, hasta: 30 }],
-  pista: null,
+  pista: {
+    esquinas: [
+      { x: 0.1, y: 0.9 },
+      { x: 0.9, y: 0.9 },
+      { x: 0.8, y: 0.2 },
+      { x: 0.2, y: 0.2 },
+    ],
+    medidas: { largo: 40, ancho: 20 },
+  },
 };
 
 /** Un jugador: sin cookie de pruebas y desde fuera de localhost, como en produccion sin sesion de Access. */
@@ -80,7 +88,7 @@ describe('el entrenador y sus enlaces', () => {
 });
 
 describe('lo que ve un jugador con el enlace', () => {
-  it('el partido y sus jugadas, sin sesion y sin nada del entrenador', async () => {
+  it('el partido y sus jugadas, con la seleccion del entrenador, sin sesion y sin nada mas suyo', async () => {
     const { c, id } = await partidoSubido();
     const e = await crearEnlace(c, id);
     const r = await jugador(`/v/api/${e.token}`);
@@ -95,11 +103,11 @@ describe('lo que ve un jugador con el enlace', () => {
       duracion: 6000,
       partes: [{ numero: 1, desde: 0, hasta: 60 }],
       jugadas: [
-        { id: 'a', desde: 0, hasta: 19.98, parte: 1, equipo: 'local' },
+        { id: 'a', desde: 0, hasta: 19.98, parte: 1, equipo: 'local', estrella: true },
         { id: 'b', desde: 30, hasta: 60, parte: 1, equipo: null },
       ],
     });
-    for (const privado of [c.dueno, 'partido.mp4', 'correcciones', 'tramos', 'manual', 'huella']) expect(texto).not.toContain(privado);
+    for (const privado of [c.dueno, 'partido.mp4', 'correcciones', 'tramos', 'manual', 'huella', 'pista', 'esquinas']) expect(texto).not.toContain(privado);
   });
 
   it('cada vez que se abre cuenta una vista', async () => {

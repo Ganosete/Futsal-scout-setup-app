@@ -39,6 +39,7 @@ const lista = new ListaJugadas(el('lista-jugadas'), (id) => {
 
 const filtros = new BarraFiltros(el('filtros-jugadores'), {
   conSinEquipo: false,
+  textoSeleccion: 'La selección del entrenador',
   alCambiar: () => {
     // Si la elegida queda fuera del filtro, se pasa a la primera que se ve.
     if (!jugadas().some((j) => j.id === seleccionada)) seleccionada = jugadas()[0]?.id ?? seleccionada;
@@ -117,7 +118,12 @@ async function iniciar(): Promise<void> {
   estado.textContent = '';
   origen = urlVideoCompartido(token);
   seleccionada = partido.jugadas[0].id;
-  filtros.pintar(partido, partido.partes.length > 1, partido.jugadas.some((j) => j.equipo !== null));
+  filtros.pintar(
+    partido,
+    partido.partes.length > 1,
+    partido.jugadas.some((j) => j.equipo !== null),
+    partido.jugadas.some((j) => j.estrella === true),
+  );
   reproductor.cargar(origen);
   bloque.hidden = false;
   pintar();

@@ -73,11 +73,12 @@ function parte(x: unknown): Parte | null {
 function fragmento(x: unknown): Fragmento | null {
   const i = intervalo(x);
   if (!i || !esObjeto(x)) return null;
-  const { id, parte: p, equipo, manual } = x;
+  const { id, parte: p, equipo, manual, estrella } = x;
   if (typeof id !== 'string' || id.length === 0 || id.length > 64) return null;
   if ((p !== 1 && p !== 2) || typeof manual !== 'boolean') return null;
   if (equipo !== null && equipo !== 'local' && equipo !== 'visitante') return null;
-  return { id, ...i, parte: p, equipo: equipo as Equipo | null, manual };
+  if (estrella !== undefined && typeof estrella !== 'boolean') return null;
+  return { id, ...i, parte: p, equipo: equipo as Equipo | null, manual, ...(estrella ? { estrella: true } : {}) };
 }
 
 /** Un punto de la imagen normalizado: lo que se marca a mano cae dentro del fotograma. */

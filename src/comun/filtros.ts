@@ -12,19 +12,27 @@ export type FiltroParte = 'todas' | 1 | 2;
 export interface Filtro {
   equipo: FiltroEquipo;
   parte: FiltroParte;
+  /** Solo los de la selección (los que llevan estrella). */
+  seleccion: boolean;
 }
 
-export const SIN_FILTRO: Filtro = { equipo: 'todos', parte: 'todas' };
+export const SIN_FILTRO: Filtro = { equipo: 'todos', parte: 'todas', seleccion: false };
 
-export function pasaFiltro(f: { equipo: Equipo | null; parte: 1 | 2 }, filtro: Filtro): boolean {
+interface Filtrable {
+  equipo: Equipo | null;
+  parte: 1 | 2;
+  estrella?: boolean;
+}
+
+export function pasaFiltro(f: Filtrable, filtro: Filtro): boolean {
   const equipo = filtro.equipo === 'todos' || (filtro.equipo === 'ninguno' ? f.equipo === null : f.equipo === filtro.equipo);
-  return equipo && (filtro.parte === 'todas' || f.parte === filtro.parte);
+  return equipo && (filtro.parte === 'todas' || f.parte === filtro.parte) && (!filtro.seleccion || f.estrella === true);
 }
 
-export function filtrar<T extends { equipo: Equipo | null; parte: 1 | 2 }>(lista: readonly T[], filtro: Filtro): T[] {
+export function filtrar<T extends Filtrable>(lista: readonly T[], filtro: Filtro): T[] {
   return lista.filter((f) => pasaFiltro(f, filtro));
 }
 
 export function hayFiltro(filtro: Filtro): boolean {
-  return filtro.equipo !== 'todos' || filtro.parte !== 'todas';
+  return filtro.equipo !== 'todos' || filtro.parte !== 'todas' || filtro.seleccion;
 }

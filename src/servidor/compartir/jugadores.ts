@@ -30,7 +30,14 @@ export function compartido(e: EnlaceConPartido, edicion: Edicion | null): Partid
     fecha: e.fecha,
     duracion: e.duracion,
     partes: edicion?.partes ?? [],
-    jugadas: (edicion?.fragmentos ?? []).map(({ id, desde, hasta, parte, equipo }) => ({ id, desde, hasta, parte, equipo })),
+    jugadas: (edicion?.fragmentos ?? []).map(({ id, desde, hasta, parte, equipo, estrella }) => ({
+      id,
+      desde,
+      hasta,
+      parte,
+      equipo,
+      ...(estrella ? { estrella: true } : {}),
+    })),
   };
 }
 

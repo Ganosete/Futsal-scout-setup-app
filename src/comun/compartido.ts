@@ -21,6 +21,8 @@ export interface JugadaCompartida {
   hasta: number;
   parte: 1 | 2;
   equipo: Equipo | null;
+  /** En la selección del entrenador. */
+  estrella?: boolean;
 }
 
 export interface PartidoCompartido {

@@ -19,7 +19,7 @@
   all: unset;
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: 3ch 6.5em 1fr auto minmax(0, 10em);
+  grid-template-columns: 3ch 6.5em 1fr auto 1.2em minmax(0, 10em);
   gap: 10px;
   align-items: center;
   width: 100%;
@@ -33,6 +33,12 @@
   outline-offset: -3px;
 }
 
+/* La estrella de la seleccion del entrenador: solo se ve, no se toca. */
+.jugada-estrella {
+  color: var(--acento);
+  text-align: center;
+}
+
 .jugada-equipo {
   overflow: hidden;
   color: var(--texto-suave);
@@ -44,7 +50,7 @@
 
 @media (max-width: 560px) {
   .jugada-boton {
-    grid-template-columns: 3ch 1fr auto minmax(0, 7em);
+    grid-template-columns: 3ch 1fr auto 1.2em minmax(0, 7em);
   }
 
   .jugada-boton .fragmento-parte {

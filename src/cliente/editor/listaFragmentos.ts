@@ -15,6 +15,8 @@ export interface OpcionesLista {
   alElegir: (id: string) => void;
   /** Se pulsa el equipo de una fila: el editor decide si lo pone o lo quita. */
   alEquipo: (id: string, equipo: Equipo) => void;
+  /** Se pulsa la estrella de una fila: entra o sale de «Mi selección». */
+  alEstrella: (id: string) => void;
   nombres: () => Nombres;
 }
 
@@ -29,6 +31,7 @@ export class ListaFragmentos {
       if (!fila?.dataset.id) return;
       const equipo = objetivo.closest<HTMLButtonElement>('button[data-equipo]')?.dataset.equipo;
       if (equipo === 'local' || equipo === 'visitante') op.alEquipo(fila.dataset.id, equipo);
+      else if (objetivo.closest('button.chip-estrella')) op.alEstrella(fila.dataset.id);
       else op.alElegir(fila.dataset.id);
     });
   }
@@ -37,6 +40,7 @@ export class ListaFragmentos {
   pintar(fragmentos: readonly Fragmento[], seleccionado: string | null, visible: (f: Fragmento) => boolean = () => true): void {
     const nombres = this.op.nombres();
     const visibles = new Set(fragmentos.filter(visible).map((f) => f.id));
+    const conEstrella = new Set(fragmentos.filter((f) => f.estrella).map((f) => f.id));
     this.lista.replaceChildren(
       ...filasFragmentos(fragmentos).filter((f) => visibles.has(f.id)).map((f) => {
         const li = crear('li', `fragmento equipo-${f.equipo ?? 'ninguno'}${f.id === seleccionado ? ' seleccionado' : ''}`);
@@ -44,12 +48,14 @@ export class ListaFragmentos {
         li.dataset.desde = f.desdeSeg.toFixed(2);
         li.dataset.hasta = f.hastaSeg.toFixed(2);
         li.dataset.equipo = f.equipo ?? '';
+        if (conEstrella.has(f.id)) li.dataset.estrella = '';
         if (f.id === seleccionado) li.setAttribute('aria-current', 'true');
         li.append(
           crear('span', 'fragmento-numero', String(f.numero)),
           crear('span', 'fragmento-parte', f.parte),
           crear('span', 'fragmento-rango', f.rango),
           crear('span', 'fragmento-duracion', f.duracion),
+          this.botonEstrella(conEstrella.has(f.id)),
           this.botonEquipo('local', 'L', nombres.local, f.equipo),
           this.botonEquipo('visitante', 'V', nombres.visitante, f.equipo),
         );
@@ -61,6 +67,15 @@ export class ListaFragmentos {
   /** Lleva la fila elegida a la vista sin mover la pagina mas de lo necesario. */
   mostrar(id: string): void {
     this.lista.querySelector(`li[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' });
+  }
+
+  private botonEstrella(puesta: boolean): HTMLButtonElement {
+    const b = crear('button', 'chip-equipo chip-estrella', puesta ? '★' : '☆');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(puesta));
+    b.setAttribute('aria-label', 'En mi selección');
+    b.title = 'En mi selección (S)';
+    return b;
   }
 
   private botonEquipo(equipo: Equipo, letra: string, nombre: string, actual: Equipo | null): HTMLButtonElement {

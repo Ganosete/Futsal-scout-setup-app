@@ -21,6 +21,7 @@ export type Accion =
   | 'inicioAqui'
   | 'finAqui'
   | 'quitar'
+  | 'estrella'
   | 'deshacer'
   | 'rehacer';
 
@@ -44,6 +45,7 @@ const SIMPLES: Readonly<Record<string, Accion>> = {
   i: 'inicioAqui',
   f: 'finAqui',
   d: 'descargar',
+  s: 'estrella',
   Delete: 'quitar',
   Backspace: 'quitar',
 };
