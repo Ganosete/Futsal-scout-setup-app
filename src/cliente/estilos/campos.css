@@ -1,0 +1,124 @@
+/* --- Datos del partido --- */
+
+.campos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.campo label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.campo input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 8px;
+}
+
+.campo input:focus-visible {
+  border-color: var(--acento);
+  outline: 3px solid var(--anillo-foco);
+  outline-offset: 0;
+}
+
+.campo input[aria-invalid='true'] {
+  border-color: var(--error);
+}
+
+.mensaje-campo {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+}
+
+.mensaje-error {
+  color: var(--error);
+}
+
+.mensaje-aviso {
+  color: var(--aviso);
+}
+
+/* --- Acciones --- */
+
+.acciones {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding-top: 20px;
+  border-top: 1px solid var(--borde);
+}
+
+.boton {
+  min-height: 44px;
+  padding: 0 18px;
+  font: inherit;
+  font-weight: 650;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.boton:focus-visible {
+  outline: 3px solid var(--anillo-foco);
+  outline-offset: 2px;
+}
+
+.boton-principal {
+  color: var(--sobre-acento);
+  background: var(--acento);
+}
+
+.boton-principal:hover:not(:disabled) {
+  background: var(--acento-hover);
+}
+
+.boton-principal:disabled {
+  color: var(--texto-suave);
+  background: var(--borde);
+  cursor: not-allowed;
+}
+
+.boton-secundario {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 0.9rem;
+  color: var(--texto);
+  background: transparent;
+  border-color: var(--borde-fuerte);
+}
+
+.boton-secundario:hover {
+  color: var(--acento);
+  border-color: var(--acento);
+}
+
+.estado {
+  margin: 0;
+  font-weight: 600;
+}
+
+.nota {
+  max-width: 60ch;
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 560px) {
+  .campos {
+    grid-template-columns: 1fr;
+  }
+
+  .zona-video {
+    padding: 28px 16px;
+  }
+}

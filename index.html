@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Scout automático de fútbol sala: corta el partido en jugadas, corrígelo con un clic y compártelo con tus jugadores." />
+    <!-- Mientras esté en desarrollo, que no lo indexe nadie. -->
+    <meta name="robots" content="noindex" />
+    <title>Futsal Scout</title>
+    <link rel="icon" href="/v/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="cabecera">
+      <a class="marca" href="/">
+        <svg class="marca-logo" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+          <rect width="32" height="32" rx="8" class="marca-fondo" />
+          <rect x="6.5" y="9" width="19" height="14" rx="1.5" class="marca-trazo" />
+          <line x1="16" y1="9" x2="16" y2="23" class="marca-trazo" />
+          <circle cx="16" cy="16" r="3" class="marca-trazo" />
+        </svg>
+        <span class="marca-nombre">Futsal Scout</span>
+      </a>
+      <span class="insignia">En desarrollo</span>
+      <div id="cuenta-cabecera" class="cuenta-cabecera" hidden>
+        <span id="email-cabecera" class="cuenta-email"></span>
+        <span id="plan-cabecera" class="insignia cuenta-plan" title="Tu plan"></span>
+        <button id="btn-mi-cuenta" type="button" class="boton-mini" aria-expanded="false" aria-controls="bloque-cuenta">Mi cuenta</button>
+        <button id="btn-salir" type="button" class="boton-mini">Salir</button>
+      </div>
+    </header>
+
+    <main class="contenido">
+      <section id="bloque-entrar" class="tarjeta entrar" aria-labelledby="titulo-entrar" hidden>
+        <div>
+          <h2 id="titulo-entrar" class="titulo-entrar">Entra en Futsal Scout</h2>
+          <p id="intro-entrar" class="nota"></p>
+        </div>
+        <form id="form-email" class="entrar-paso" novalidate>
+          <div class="campo">
+            <label for="campo-email">Tu email</label>
+            <input id="campo-email" name="email" type="email" inputmode="email" autocomplete="email" maxlength="254" required />
+          </div>
+          <button type="submit" class="boton boton-principal">Enviarme el código</button>
+        </form>
+        <form id="form-codigo" class="entrar-paso" novalidate hidden>
+          <p id="texto-codigo" class="nota"></p>
+          <div class="campo campo-codigo">
+            <label for="campo-codigo">Código</label>
+            <input id="campo-codigo" name="codigo" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="7" required />
+          </div>
+          <button type="submit" class="boton boton-principal">Entrar</button>
+          <div class="entrar-otras">
+            <button id="btn-otro-codigo" type="button" class="boton-mini">Mandarme otro código</button>
+            <button id="btn-otro-email" type="button" class="boton-mini">Usar otro email</button>
+          </div>
+        </form>
+        <p id="estado-entrar" class="estado" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="bloque-cuenta" class="tarjeta cuenta" aria-labelledby="titulo-cuenta" hidden>
+        <div class="cuenta-cabeza">
+          <div>
+            <h2 id="titulo-cuenta" class="titulo-seccion" tabindex="-1">Mi cuenta</h2>
+            <p id="resumen-cuenta" class="nota"></p>
+          </div>
+          <button id="btn-cerrar-cuenta" type="button" class="boton-mini" aria-label="Cerrar «Mi cuenta»">Cerrar</button>
+        </div>
+        <div class="cuenta-parte">
+          <h3 class="titulo-subseccion">Lo que usas</h3>
+          <div id="medidas-cuenta" class="medidas"></div>
+        </div>
+        <div class="cuenta-parte">
+          <h3 class="titulo-subseccion">Planes</h3>
+          <p class="nota">Es una maqueta: cambiar de plan no cobra nada ni pide datos de pago.</p>
+          <ul id="planes" class="planes"></ul>
+        </div>
+        <div id="pago-maqueta" class="pago" hidden>
+          <h3 id="titulo-pago" class="titulo-subseccion" tabindex="-1"></h3>
+          <p class="pago-aviso">Maqueta: no se cobra nada.</p>
+          <dl class="pago-datos">
+            <div>
+              <dt>Precio</dt>
+              <dd id="precio-pago"></dd>
+            </div>
+            <div>
+              <dt>Lo que ya tienes</dt>
+              <dd id="efecto-pago"></dd>
+            </div>
+          </dl>
+          <div class="pago-acciones">
+            <button id="btn-confirmar-plan" type="button" class="boton boton-principal">Confirmar el cambio</button>
+            <button id="btn-cancelar-plan" type="button" class="boton boton-secundario">Cancelar</button>
+          </div>
+        </div>
+        <p id="estado-cuenta" class="estado" role="status" aria-live="polite"></p>
+      </section>
+
+      <section id="bloque-mis-partidos" class="tarjeta mis-partidos" aria-labelledby="titulo-mis-partidos" hidden>
+        <h2 id="titulo-mis-partidos" class="titulo-seccion">Mis partidos</h2>
+        <ul id="lista-partidos" class="partidos"></ul>
+        <p id="estado-partidos" class="nota" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="intro">
+        <h1>Nuevo partido</h1>
+        <p>
+          Sube el vídeo y Futsal Scout lo cortará en jugadas: quitará los ratos de balón parado, podrás
+          corregirlo con un clic y compartir los clips con tu equipo.
+        </p>
+      </section>
+
+      <form id="form-subida" class="tarjeta" novalidate>
+        <fieldset id="bloque-video" class="bloque">
+          <legend><span class="paso">1</span> Vídeo del partido</legend>
+
+          <div id="zona-video" class="zona">
+            <input id="entrada-video" class="solo-visual" type="file" accept="video/mp4,video/quicktime,.mp4,.m4v,.mov" />
+            <label for="entrada-video" class="zona-video">
+              <svg class="zona-icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M12 15V4m0 0L8 8m4-4 4 4M4 15v3.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V15" />
+              </svg>
+              <span class="zona-titulo solo-raton">Arrastra aquí el vídeo del partido</span>
+              <span class="zona-texto solo-raton">o <span class="zona-enlace">elígelo de tu ordenador</span></span>
+              <span class="zona-titulo solo-tactil">Toca para elegir el vídeo del partido</span>
+              <span class="zona-nota">MP4 o MOV: de una cámara, de un móvil o descargado de Veo.</span>
+            </label>
+          </div>
+
+          <div id="ficha-video" class="ficha" hidden>
+            <div class="ficha-cabecera">
+              <p id="nombre-video" class="ficha-nombre"></p>
+              <button id="btn-cambiar-video" type="button" class="boton boton-secundario">Cambiar vídeo</button>
+            </div>
+            <dl id="datos-video" class="datos"></dl>
+          </div>
+
+          <ul id="problemas-video" class="problemas" aria-live="polite" hidden></ul>
+        </fieldset>
+
+        <fieldset class="bloque">
+          <legend><span class="paso">2</span> Datos del partido</legend>
+          <div class="campos">
+            <div class="campo">
+              <label for="campo-local">Equipo local</label>
+              <input id="campo-local" name="local" type="text" maxlength="60" autocomplete="off" required aria-describedby="mensaje-local" />
+              <p id="mensaje-local" class="mensaje-campo" hidden></p>
+            </div>
+            <div class="campo">
+              <label for="campo-visitante">Equipo visitante</label>
+              <input id="campo-visitante" name="visitante" type="text" maxlength="60" autocomplete="off" required aria-describedby="mensaje-visitante" />
+              <p id="mensaje-visitante" class="mensaje-campo" hidden></p>
+            </div>
+            <div class="campo campo-fecha">
+              <label for="campo-fecha">Fecha</label>
+              <input id="campo-fecha" name="fecha" type="date" required aria-describedby="mensaje-fecha" />
+              <p id="mensaje-fecha" class="mensaje-campo" hidden></p>
+            </div>
+          </div>
+        </fieldset>
+
+        <div class="acciones">
+          <button id="btn-subir" type="submit" class="boton boton-principal" disabled>Subir y analizar</button>
+          <p id="estado-subida" class="estado" role="status" aria-live="polite"></p>
+          <p class="nota">
+            El vídeo se guarda en tu cuenta y, a la vez, tu navegador busca las jugadas: puedes revisarlas mientras
+            sube. Si se corta, elige el mismo vídeo y seguirá donde se quedó.
+          </p>
+        </div>
+      </form>
+
+      <section id="bloque-analisis" class="tarjeta jugadas" aria-labelledby="titulo-analisis" hidden>
+        <h2 id="titulo-analisis" class="titulo-seccion">Jugadas</h2>
+        <p id="partido-abierto" class="partido-abierto"></p>
+        <div class="progresos">
+          <div id="progreso-subida" class="progreso" hidden>
+            <span class="progreso-nombre">Subida</span>
+            <progress id="barra-subida" max="1" value="0" aria-label="Progreso de la subida"></progress>
+            <span id="porcentaje-subida" class="porcentaje">0 %</span>
+          </div>
+          <div id="progreso-analisis" class="progreso" hidden>
+            <span class="progreso-nombre">Jugadas</span>
+            <progress id="barra-analisis" max="1" value="0" aria-label="Progreso de la búsqueda de jugadas"></progress>
+            <span id="porcentaje-analisis" class="porcentaje">0 %</span>
+          </div>
+        </div>
+        <p id="estado-subida-partido" class="estado-analisis" role="status" aria-live="polite"></p>
+        <p id="estado-analisis" class="estado-analisis" role="status" aria-live="polite"></p>
+        <div class="analisis-controles">
+          <button id="btn-parar" type="button" class="boton boton-secundario" hidden>Parar</button>
+        </div>
+        <div id="resultado-analisis" class="resultado" hidden>
+          <p id="resumen-analisis" class="resumen"></p>
+          <p id="equipos-analisis" class="nota"></p>
+          <p id="partes-analisis" class="nota"></p>
+          <div id="marco-video-editor" class="marco-video">
+            <video id="video-editor" class="video-editor" controls playsinline preload="metadata"></video>
+          </div>
+          <!-- Con el ratón; con el teclado se llega a lo mismo con los atajos y la lista. -->
+          <div id="linea-analisis" class="linea" aria-hidden="true"></div>
+          <div id="partes-editor" class="partes-editor" aria-label="Partes del partido">
+            <div class="parte-fila">
+              <span class="parte-nombre">1.ª parte</span>
+              <span id="rango-parte-1" class="parte-rango"></span>
+              <button type="button" class="boton-mini" data-parte="1" data-borde="desde" aria-label="La 1.ª parte empieza aquí">Empieza aquí</button>
+              <button type="button" class="boton-mini" data-parte="1" data-borde="hasta" aria-label="La 1.ª parte acaba aquí">Acaba aquí</button>
+            </div>
+            <div class="parte-fila">
+              <span class="parte-nombre">2.ª parte</span>
+              <span id="rango-parte-2" class="parte-rango"></span>
+              <button type="button" class="boton-mini" data-parte="2" data-borde="desde" aria-label="La 2.ª parte empieza aquí">Empieza aquí</button>
+              <button type="button" class="boton-mini" data-parte="2" data-borde="hasta" aria-label="La 2.ª parte acaba aquí">Acaba aquí</button>
+            </div>
+          </div>
+          <div id="barra-editor" class="barra-editor" role="toolbar" aria-label="Revisar los fragmentos">
+            <div class="grupo">
+              <button type="button" class="boton-mini" data-accion="anterior" title="Fragmento anterior (↑)">↑ Anterior</button>
+              <button type="button" class="boton-mini" data-accion="verFragmento" title="Ver el fragmento (Intro)">Ver fragmento</button>
+              <button type="button" class="boton-mini" data-accion="descargar" title="Descargar el fragmento en MP4, sin perder calidad (D)">Descargar MP4</button>
+              <button type="button" class="boton-mini" data-accion="verTodo" title="Ver todos los fragmentos seguidos, sin el balón parado">Ver todo seguido</button>
+              <button type="button" class="boton-mini" data-accion="siguiente" title="Fragmento siguiente (↓)">Siguiente ↓</button>
+            </div>
+            <div class="grupo">
+              <button type="button" class="boton-mini equipo-local" data-accion="local" aria-pressed="false" title="Ataca el local (L)">Local</button>
+              <button type="button" class="boton-mini equipo-visitante" data-accion="visitante" aria-pressed="false" title="Ataca el visitante (V)">Visitante</button>
+              <button type="button" class="boton-mini" data-accion="estrella" aria-pressed="false" aria-label="En mi selección" title="En tu selección para la charla (S)">★ Mi selección</button>
+              <button type="button" class="boton-mini" data-accion="descargarSeleccion" disabled title="Los fragmentos con estrella, seguidos en un MP4">Descargar la selección</button>
+            </div>
+            <div class="grupo">
+              <button type="button" class="boton-mini" data-accion="inicioAqui" title="El fragmento empieza donde está el vídeo (I)">Inicio aquí</button>
+              <button type="button" class="boton-mini" data-accion="finAqui" title="El fragmento acaba donde está el vídeo (F)">Fin aquí</button>
+              <button type="button" class="boton-mini" data-accion="partir" title="Partir el fragmento donde está el vídeo (P)">Partir aquí</button>
+              <button type="button" class="boton-mini" data-accion="unir" title="Unir con el fragmento siguiente (U)">Unir con el siguiente</button>
+              <button type="button" class="boton-mini" data-accion="quitar" title="No es juego: quitar el fragmento (Supr)">Quitar</button>
+            </div>
+            <div class="grupo">
+              <button type="button" class="boton-mini" data-accion="deshacer" title="Deshacer (Ctrl+Z)">Deshacer</button>
+              <button type="button" class="boton-mini" data-accion="rehacer" title="Rehacer (Ctrl+Mayús+Z)">Rehacer</button>
+            </div>
+          </div>
+          <p id="estado-editor" class="estado-editor" role="status" aria-live="polite"></p>
+          <p id="estado-guardado" class="estado-guardado" role="status" aria-live="polite"></p>
+          <div id="filtros-editor" class="filtros"></div>
+          <ol id="lista-fragmentos" class="fragmentos" aria-label="Fragmentos de juego"></ol>
+          <p class="nota atajos">
+            Atajos: Espacio reproduce · ↑ ↓ cambian de fragmento · ← → mueven 2 s (con Mayús, 0,2 s) · L / V equipo ·
+            I / F inicio y fin · P parte · U une · Supr quita · S selección · D descarga · Ctrl+Z deshace.
+          </p>
+        </div>
+        <section id="bloque-ritmo" class="compartir" aria-labelledby="titulo-ritmo" hidden>
+          <h3 id="titulo-ritmo" class="titulo-subseccion">Ritmo del partido</h3>
+          <p class="nota">
+            Cuánto se juega y quién tiene el balón, por tramos de 5 minutos de vídeo dentro de cada parte. Sale de los
+            fragmentos y de su equipo: lo que corrijas cambia aquí también.
+          </p>
+          <div id="grafico-ritmo" class="ritmo-grafico"></div>
+        </section>
+        <section id="bloque-equipos" class="compartir equipos" aria-labelledby="titulo-equipos" hidden>
+          <h3 id="titulo-equipos" class="titulo-subseccion">Quién ataca</h3>
+          <p class="nota">
+            Mira en cada fragmento qué jugador tiene el balón y, por el color de su camiseta, de qué equipo es. Lo hace
+            tu navegador: la primera vez descarga el detector (108 MB). Con tarjeta gráfica tarda unos minutos; sin ella,
+            mucho más. Lo que hayas puesto a mano no se toca.
+          </p>
+          <details id="pista-equipos" class="pista">
+            <summary>La pista, si la cámara no se mueve <span id="resumen-pista" class="resumen-pista"></span></summary>
+            <p class="nota">
+              Marca sus cuatro esquinas sobre el vídeo, en cualquier orden. Con la pista marcada se buscan también los
+              balones que salen y la posesión se mide por toques. No sirve si la cámara sigue el balón.
+            </p>
+            <div class="pista-controles">
+              <button id="btn-marcar-pista" type="button" class="boton-mini">Marcar las esquinas</button>
+              <button id="btn-girar-pista" type="button" class="boton-mini" hidden>Girar</button>
+              <button id="btn-quitar-pista" type="button" class="boton-mini" aria-label="Quitar la pista marcada" hidden>Quitar</button>
+            </div>
+            <div class="pista-medidas">
+              <label>Largo <input id="largo-pista" type="number" inputmode="decimal" min="25" max="42" step="0.5" value="40" /> m</label>
+              <label>Ancho <input id="ancho-pista" type="number" inputmode="decimal" min="16" max="25" step="0.5" value="20" /> m</label>
+            </div>
+            <p id="estado-pista" class="estado-analisis" role="status" aria-live="polite"></p>
+          </details>
+          <div class="analisis-controles">
+            <button id="btn-buscar-equipos" type="button" class="boton boton-secundario">Buscar quién ataca</button>
+            <button id="btn-parar-equipos" type="button" class="boton boton-secundario" hidden>Parar</button>
+          </div>
+          <div id="progreso-equipos" class="progreso" hidden>
+            <span class="progreso-nombre">Equipos</span>
+            <progress id="barra-equipos" max="1" value="0" aria-label="Progreso de la búsqueda de equipos"></progress>
+            <span id="porcentaje-equipos" class="porcentaje">0 %</span>
+          </div>
+          <p id="estado-equipos" class="estado-analisis" role="status" aria-live="polite"></p>
+          <div id="colores-equipos" class="colores-equipos" hidden>
+            <p id="pregunta-equipos" class="pregunta-equipos"></p>
+            <div class="botones-colores">
+              <button type="button" class="boton-color" data-grupo="0" aria-pressed="false"><span class="muestra-color"></span><span class="nombre-color"></span></button>
+              <button type="button" class="boton-color" data-grupo="1" aria-pressed="false"><span class="muestra-color"></span><span class="nombre-color"></span></button>
+            </div>
+            <label class="casilla"><input id="partir-posesion" type="checkbox" checked /> Partir los fragmentos donde cambia la posesión</label>
+          </div>
+          <div id="fuera-equipos" class="colores-equipos" hidden>
+            <p id="texto-fuera" class="pregunta-equipos"></p>
+            <div class="analisis-controles">
+              <button id="btn-quitar-fuera" type="button" class="boton boton-secundario" hidden>Quitar los balones fuera</button>
+            </div>
+          </div>
+        </section>
+        <section id="bloque-compartir" class="compartir" aria-labelledby="titulo-compartir" hidden>
+          <h3 id="titulo-compartir" class="titulo-subseccion">Compartir con los jugadores</h3>
+          <p class="nota">
+            Con el enlace, tus jugadores ven y descargan las jugadas sin cuenta. Quien lo tenga puede verlas:
+            mándalo solo al equipo. Si cambias algo, lo verán al volver a abrirlo.
+          </p>
+          <div class="compartir-crear">
+            <label for="caducidad-enlace">Caduca</label>
+            <select id="caducidad-enlace">
+              <option value="7">en 7 días</option>
+              <option value="30" selected>en 30 días</option>
+              <option value="">nunca</option>
+            </select>
+            <button id="btn-crear-enlace" type="button" class="boton boton-secundario">Crear enlace</button>
+          </div>
+          <ul id="lista-enlaces" class="enlaces"></ul>
+          <p id="estado-compartir" class="nota" role="status" aria-live="polite"></p>
+        </section>
+      </section>
+    </main>
+
+    <footer class="pie">Futsal Scout · versión <span id="version">—</span></footer>
+    <script type="module" src="/src/cliente/main.ts"></script>
+  </body>
+</html>

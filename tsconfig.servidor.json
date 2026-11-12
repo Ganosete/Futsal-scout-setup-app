@@ -1,0 +1,11 @@
+{
+  // Lo que corre en el Worker. Sin DOM: los tipos del entorno de workerd los
+  // genera `npm run tipos:worker` en src/servidor/worker-configuration.d.ts,
+  // a partir de wrangler.jsonc (fecha de compatibilidad y bindings).
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": []
+  },
+  "include": ["src/servidor", "src/comun"]
+}

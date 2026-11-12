@@ -1,0 +1,285 @@
+/* --- «Mis partidos» y la seccion de jugadas de un partido --- */
+
+.titulo-seccion {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.mis-partidos {
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.partidos {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.partido {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 10px 0;
+}
+
+.partido + .partido {
+  border-top: 1px solid var(--borde);
+}
+
+.partido-datos {
+  min-width: 0;
+}
+
+.partido-titulo {
+  margin: 0;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.partido-detalle {
+  margin: 2px 0 0;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.partido-acciones {
+  display: flex;
+  gap: 8px;
+}
+
+/* Abierto: el que se esta viendo en «Jugadas». */
+.partido[aria-current='true'] .partido-titulo {
+  color: var(--acento);
+}
+
+.jugadas {
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.partido-abierto {
+  margin: 0;
+  color: var(--texto-suave);
+}
+
+.partido-abierto:empty {
+  display: none;
+}
+
+.progresos {
+  display: grid;
+  gap: 8px;
+}
+
+.progresos:not(:has(.progreso:not([hidden]))) {
+  display: none;
+}
+
+.progreso-nombre {
+  min-width: 4.5em;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.analisis-controles:not(:has(:not([hidden]))) {
+  display: none;
+}
+
+.estado-guardado {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+.estado-guardado:empty {
+  display: none;
+}
+
+/* --- «Compartir con los jugadores» --- */
+
+.compartir {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 16px;
+  border-top: 1px solid var(--borde);
+}
+
+.titulo-subseccion {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.compartir .nota {
+  margin: 0;
+}
+
+.compartir-crear {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.compartir-crear label {
+  font-weight: 600;
+}
+
+.compartir-crear select {
+  padding: 6px 10px;
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio);
+}
+
+.enlaces {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.enlaces:empty {
+  display: none;
+}
+
+.enlace {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--superficie-2);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.enlace-url {
+  width: 100%;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+}
+
+.enlace-detalle {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+.enlace-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* --- «Quién ataca» --- */
+
+.pregunta-equipos {
+  margin: 0;
+  font-weight: 600;
+}
+
+.botones-colores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.boton-color {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--radio);
+  cursor: pointer;
+}
+
+.boton-color:hover {
+  border-color: var(--acento);
+}
+
+.boton-color[aria-pressed='true'] {
+  border-color: var(--acento);
+  box-shadow: 0 0 0 3px var(--anillo-foco);
+}
+
+/* El color lo pone el codigo en la propiedad --color (CSSOM: la CSP no deja estilos en linea). */
+.muestra-color {
+  width: 22px;
+  height: 22px;
+  background: var(--color, var(--sin-equipo));
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 6px;
+}
+
+.casilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+/* «La pista», dentro de «Quién ataca». */
+.pista {
+  display: grid;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  background: var(--superficie-2);
+}
+
+.pista[open] {
+  padding-bottom: 14px;
+}
+
+.pista summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.resumen-pista {
+  color: var(--texto-suave);
+  font-weight: 400;
+}
+
+.pista-controles,
+.pista-medidas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.pista-medidas label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.pista-medidas input {
+  width: 5.5em;
+  padding: 4px 6px;
+  font: inherit;
+  color: var(--texto);
+  background: var(--superficie);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: 6px;
+}
