@@ -7,5 +7,7 @@
     "lib": ["ES2022"],
     "types": ["@cloudflare/vitest-plugin/types"]
   },
-  "include": ["tests/servidor", "src/servidor", "src/comun"]
+  "include": ["tests/servidor", "src/servidor", "src/comun"],
+  // Sin esto hereda el exclude de tsconfig.json, que deja fuera justo tests/servidor.
+  "exclude": []
 }
