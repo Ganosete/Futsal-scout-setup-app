@@ -1,5 +1,6 @@
 import { crearIdentificador } from './acceso/identidad';
 import { crearApi, crearApiJugadores } from './api';
+import { limpiar } from './limpieza';
 import { paginaJugadores } from './paginaJugadores';
 
 const api = crearApi(crearIdentificador());
@@ -14,5 +15,9 @@ export default {
     if (camino.startsWith('/v/api/')) return apiJugadores(peticion, env);
     if (camino.startsWith('/v/')) return paginaJugadores(peticion, env);
     return env.ASSETS.fetch(peticion);
+  },
+
+  scheduled(controlador, env, ctx) {
+    ctx.waitUntil(limpiar(env, new Date(controlador.scheduledTime)));
   },
 } satisfies ExportedHandler<Env>;

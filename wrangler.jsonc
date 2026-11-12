@@ -34,10 +34,15 @@
       "jurisdiction": "eu"
     }
   ],
+  // La limpieza (servidor/limpieza.ts): sesiones caducadas y partidos que
+  // pasan la retencion de su plan. Cada hora, por lotes.
+  "triggers": {
+    "crons": ["23 * * * *"]
+  },
   "vars": {
     // Cloudflare Access: el dominio del equipo (<equipo>.cloudflareaccess.com)
-    // y la etiqueta AUD de la aplicacion. No son secretos. Vacios, la API
-    // responde 503 fuera de localhost.
+    // y la etiqueta AUD de la aplicacion. No son secretos. Vacios, fuera de
+    // localhost solo se entra con el email (fase 5).
     "ACCESS_EQUIPO": "",
     "ACCESS_AUD": "",
     // Cada parte de la subida: 50 MiB. R2 pide al menos 5 MiB (salvo la
