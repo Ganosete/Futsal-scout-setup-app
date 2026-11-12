@@ -10,8 +10,8 @@ compartir los clips con tus jugadores.
 
 ## Estado
 
-**Fases 1 y 2 hechas, y de la 3 todo menos el detector afinado**, que necesita datos y una GPU.
-Falta medirlo todo con partidos reales. Lo que hay:
+**Fases 1, 2 y 4 hechas, y de la 3 todo menos el detector afinado**, que necesita datos y una
+GPU. Falta medirlo todo con partidos reales. Lo que hay:
 
 1. **Nuevo partido:** eliges el vídeo y se comprueba al momento (duración, imagen, sonido,
    tamaño, y si hay algo que impida usarlo o que vaya a salir peor).
@@ -32,11 +32,17 @@ Falta medirlo todo con partidos reales. Lo que hay:
    por cercanía.
 6. **Ver solo un equipo o una parte**, en el editor y en la página de los jugadores, también al
    verlo todo seguido.
-7. **Mis partidos:** lo subido, para volver a abrirlo (el vídeo se ve desde el servidor) o
+7. **Mi selección:** una estrella en los fragmentos que quieres para la charla (desde la fila o
+   con la S), un filtro para ver solo esos y «Descargar la selección»: un MP4 con todos, uno
+   detrás de otro, sin recodificar. Los jugadores ven la selección y también la pueden bajar.
+8. **Ritmo del partido:** cuánto se juega y quién tiene el balón, por tramos de 5 minutos de
+   vídeo dentro de cada parte, con el reparto de cada parte y del partido. Cambia con cada
+   corrección, y lo ven también los jugadores.
+9. **Mis partidos:** lo subido, para volver a abrirlo (el vídeo se ve desde el servidor) o
    borrarlo.
-8. **Descargar en MP4** cualquier fragmento, sin recodificar y con un nombre que dice partido,
+10. **Descargar en MP4** cualquier fragmento, sin recodificar y con un nombre que dice partido,
    fecha, jugada y minuto.
-9. **Compartir con los jugadores:** un enlace (7 días, 30 días o sin caducidad) con el que ven y
+11. **Compartir con los jugadores:** un enlace (7 días, 30 días o sin caducidad) con el que ven y
    descargan las jugadas desde el móvil, sin cuenta. El entrenador ve cuántas veces se ha abierto
    y lo quita cuando quiere; lo que corrija después, los jugadores lo ven al volver a abrirlo.
 
@@ -84,6 +90,11 @@ Jugadores: /v/<token> → las jugadas, para verlas y descargarlas, sin cuenta
   índice. El clip empieza justo donde empieza el fragmento: se copia desde el fotograma clave
   anterior y una lista de edición le dice al reproductor que se salte ese trozo. Al final puede
   llevar uno o dos fotogramas de más.
+- **La selección también es virtual.** Una estrella es un campo más del fragmento. El vídeo de
+  la selección se hace al descargarlo, en el navegador de quien lo pide: se copian los paquetes
+  de cada jugada, una detrás de otra. Sin recodificar, cada jugada empieza en su fotograma
+  clave, hasta un GOP antes de lo marcado (en vídeos de cámara o de móvil, uno o dos segundos):
+  la lista de edición que lo esconde en un recorte suelto solo vale al principio del fichero.
 - **Dónde va cada cosa.** D1 lleva la lista de partidos y lo que hace falta para reanudar una
   subida. En R2 van el vídeo, las jugadas de cada partido (partes, fragmentos y cada corrección,
   en un JSON) y las señales del análisis. Las jugadas no van en D1 porque con muchas correcciones
@@ -201,7 +212,7 @@ que no alcanzan para guardar las jugadas de un partido muy corregido; el plan de
 | **1. MVP** | ✅ análisis en el navegador (silbato + movimiento + calmas largas) y límites de cada parte · ✅ editor: equipo con un clic, unir, partir, ajustar inicio y fin, quitar, deshacer · ✅ descarga en MP4 sin recodificar · ✅ subida reanudable a R2 mientras se analiza, partidos en D1, Cloudflare Access, «Mis partidos» y guardado automático · ✅ enlace para jugadores · medida con 2-3 partidos reales | 1, 2, 4, 6 |
 | **2. Equipos y partes** | ✅ detector en el navegador · ✅ colores de cada equipo (se agrupan solos; el entrenador dice cuál es el local) · ✅ posesión por fragmento, sin usar la mitad del campo · ✅ partir por posesión · ✅ filtros por equipo y parte · medida con partidos reales | 3, 5 |
 | **3. Mejor detección** | ✅ balón fuera con la cámara fija y la pista marcada · ✅ posesión por toques · detector afinado para el balón de sala: los scripts y la app listos, faltan datos y una GPU · medida con partidos reales | 2, 3 |
-| **4. Selección y ritmo** | Estrellas y vídeo de la selección (unido sin recodificar), gráfico del ritmo del partido | 7, 8 |
+| **4. Selección y ritmo** ✅ | Estrellas y filtro de «Mi selección» · vídeo de la selección, unido sin recodificar en el navegador · gráfico del ritmo del partido, también para los jugadores | 7, 8 |
 | **5. Usuarios y planes** | Altas por email, planes gratuito, Scout y Pro con límites, pago en maqueta | 10 |
 | **6. Procesado en servidor** | Cloudflare Containers: análisis sin el navegador abierto, versión ligera a 720p para los jugadores | — |
 | **7. Importar desde Veo** | Solo tras revisar sus condiciones de uso | 9 |
@@ -280,15 +291,17 @@ src/cliente/     Navegador (DOM a pelo, sin framework):
   equipos/         «Quién ataca»: descarga del detector, worker que detecta, la pregunta del color
                    y los balones fuera
   pista/           marcar las cuatro esquinas de la pista sobre el vídeo
+  ritmo/           el gráfico del ritmo del partido (SVG), en el editor y en la de los jugadores
   jugadores/       la página de los jugadores (jugadores.html, en /v/<token>)
   editor/          editor de fragmentos: operaciones puras, historial, guardado, vídeo, línea y lista
-  descarga/        recorte a MP4 sin recodificar y nombre del fichero
+  descarga/        recorte a MP4 y unión de la selección, sin recodificar, y nombre del fichero
   api/             llamadas a la API
 src/servidor/    Worker: enrutador mínimo y API
   acceso/          quién llama (JWT de Cloudflare Access) y de qué web viene
   partidos/        partidos en D1, subida multiparte a R2, vídeo por rangos y jugadas
   compartir/       enlaces de los jugadores y lo que ven con ellos
-src/comun/       Tipos y funciones puras que usan los dos lados (formatos, validación, filtros)
+src/comun/       Tipos y funciones puras que usan los dos lados (formatos, validación, filtros,
+                 ritmo del partido)
 src/nucleo/      Detección, en TypeScript puro y sin DOM (parte copiada de futsal-tracking):
   balonParado/     silbato, movimiento, tramos de balón parado y balón fuera
   deteccion/       preproceso y posproceso de RF-DETR

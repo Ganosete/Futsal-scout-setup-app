@@ -51,7 +51,8 @@ está en el README.
   Access basta una regla *Bypass* para `/v/*`. Esas rutas solo leen y las abre el token; no
   devuelven nada del entrenador (`servidor/compartir/jugadores.ts`).
 - Son dos páginas de Vite (`index.html` y `jugadores.html`). La de los jugadores no importa nada
-  del editor salvo el reproductor y la descarga: pesa unos 9 KB comprimidos, estilos incluidos.
+  del editor salvo el reproductor, la descarga y el gráfico del ritmo: pesa unos 13 KB
+  comprimidos, estilos incluidos.
 
 ## Código copiado de futsal-tracking
 
@@ -96,8 +97,9 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
   SPA devuelve `index.html` también para la API.
 - **La CSP de `public/_headers` es estricta**: nada de scripts ni estilos en línea, y cualquier
   origen externo se añade a propósito.
-- Mediabunny se carga con un `import()` al elegir el vídeo o al descargar: la página inicial
-  pesa unos 11 KB comprimidos (editor incluido) y Mediabunny, unos 80 KB, llega después.
+- Mediabunny se carga con un `import()` al elegir el vídeo o al descargar: la página del
+  entrenador pesa unos 37 KB comprimidos (editor, «Quién ataca», la pista y el ritmo incluidos) y
+  Mediabunny, unos 107 KB, llega después.
 - Los source maps del cliente no se publican; los del Worker se suben a Cloudflare.
 - Mediabunny da la rotación en sentido horario; ffmpeg la guarda en antihorario (`rotado.mp4`:
   90 en ffmpeg, 270 en Mediabunny).
@@ -176,3 +178,11 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
   `tests/servidor`.
 - **Las clases del detector van en el manifiesto** (`comun/modelos.ts`): pasar al detector afinado
   es cambiar `DETECTOR` (fichero, tamaño, SHA-256, versión, entrada y clases), no el código.
+- **La estrella de «Mi selección» no es una corrección** (`editor/marcas.ts`): no deja el fragmento
+  `manual` ni se apunta. Sin marcar no se guarda el campo, así que las ediciones de antes valen.
+- **El vídeo de la selección empieza cada jugada en su fotograma clave** (`descarga/union.ts`): la
+  lista de edición que esconde lo de antes solo vale al principio del fichero. Se prueba en Node
+  con los vídeos de verdad y en Chromium que el resultado se carga y se puede saltar por él.
+- **Los gráficos siguen la skill de dataviz** (`cliente/ritmo/`): leyenda, marcas finas, 2 px de
+  superficie entre tramos, foco de teclado y tabla. Los colores de los equipos están validados
+  con su script en claro y en oscuro; si se cambian esos tokens, hay que volver a pasarlo.
