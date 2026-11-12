@@ -10,7 +10,7 @@ compartir los clips con tus jugadores.
 
 ## Estado
 
-**Fases 1, 2 y 4 hechas, y de la 3 todo menos el detector afinado**, que necesita datos y una
+**Fases 1, 2, 4 y 5 hechas, y de la 3 todo menos el detector afinado**, que necesita datos y una
 GPU. Falta medirlo todo con partidos reales. Lo que hay:
 
 1. **Nuevo partido:** eliges el vídeo y se comprueba al momento (duración, imagen, sonido,
@@ -45,6 +45,22 @@ GPU. Falta medirlo todo con partidos reales. Lo que hay:
 11. **Compartir con los jugadores:** un enlace (7 días, 30 días o sin caducidad) con el que ven y
    descargan las jugadas desde el móvil, sin cuenta. El entrenador ve cuántas veces se ha abierto
    y lo quita cuando quiere; lo que corrija después, los jugadores lo ven al volver a abrirlo.
+12. **Entrar con el email:** llega un código y con él se entra, sin contraseñas; la primera vez es
+   el alta. En la cabecera, el plan, «Mi cuenta» y «Salir».
+13. **Planes:** Gratuito, Scout y Pro, cada uno con sus partidos, su almacenamiento y los días que
+   se guarda cada partido. «Mi cuenta» enseña lo que usas y deja cambiar de plan, y «Mis partidos»
+   dice cuándo se borra cada uno. **El pago es una maqueta:** no pide datos y no cobra nada.
+
+**Las cifras de los planes son provisionales** (`src/comun/planes.ts`, un cambio de una línea):
+
+| Plan | Precio | Partidos | Almacenamiento | Cada partido se guarda |
+|---|---|---|---|---|
+| Gratuito | 0 € | 3 | 10 GB | 30 días |
+| Scout | 9 € al mes | 30 | 150 GB | 1 año |
+| Pro | 19 € al mes | sin límite | 500 GB | sin límite |
+
+Lo que cuesta de verdad es el almacenamiento en R2, a unos 0,015 $ por GB y mes: un plan gratuito
+lleno son 0,15 $ al mes.
 
 **Lo que tarda «Quién ataca».** La primera vez descarga el detector (108 MB) y lo guarda en el
 navegador. Con tarjeta gráfica (WebGPU) mira 3 fotogramas por segundo de juego. Sin ella mira uno
@@ -77,7 +93,8 @@ Navegador del entrenador
   │  hay → quién tiene el balón → color de su camiseta → equipo de cada fragmento
   │  (con la pista marcada: el balón en metros → balones fuera y toques)
   └─ descarga en MP4 sin recodificar, leyendo de R2 solo el clip
-Worker de Cloudflare: la página y la API   R2 (UE): vídeos y jugadas   D1: partidos y enlaces
+Worker de Cloudflare: la página, la API y la limpieza de cada hora
+R2 (UE): vídeos y jugadas   D1: partidos, enlaces y cuentas
 Jugadores: /v/<token> → las jugadas, para verlas y descargarlas, sin cuenta
 ```
 
@@ -100,9 +117,21 @@ Jugadores: /v/<token> → las jugadas, para verlas y descargarlas, sin cuenta
   en un JSON) y las señales del análisis. Las jugadas no van en D1 porque con muchas correcciones
   pueden pasar de los 2 MB que admite una fila; las señales, en bruto, sirven para recalcular los
   fragmentos con otros umbrales sin volver a leer el vídeo.
-- **Quién entra.** La web va detrás de Cloudflare Access (código por email) y el Worker verifica
-  el JWT que manda Access en cada petición. Cada entrenador ve solo sus partidos. Con dos
-  pestañas abiertas, la que se ha quedado atrás no puede pisar lo corregido en la otra.
+- **Quién entra.** Cada entrenador entra con su email: pide un código, le llega por correo
+  (Cloudflare Email Service) y con él abre una sesión de 30 días, en una cookie que JavaScript no
+  puede leer. No hay contraseñas, y en D1 solo se guardan los hashes de los códigos y de las
+  sesiones. Un código vale 10 minutos y 5 intentos, y se puede pedir uno por minuto. Si la web va
+  detrás de Cloudflare Access, también vale el email de Access: el Worker verifica el JWT que
+  manda en cada petición. Cada entrenador ve solo sus partidos. Con dos pestañas abiertas, la que
+  se ha quedado atrás no puede pisar lo corregido en la otra.
+- **Los planes** los comprueba el Worker con las mismas funciones que usa la página para
+  enseñarlos (`src/comun/planes.ts`). Un partido que no cabe no se crea (402, con el motivo);
+  para bajar de plan, lo guardado tiene que caber en el nuevo, y no se borra nada para hacer
+  sitio. Los días de cada partido cuentan desde que se subió o desde el último cambio de plan, lo
+  que sea después: quien baja de plan tiene los días del nuevo para bajarse lo que quiera
+  guardar. Cada hora, un cron borra lo que se ha pasado (el vídeo, las jugadas y los enlaces) y
+  las sesiones caducadas, de 10 partidos en 10 para no pasar del tope de subpeticiones del plan
+  gratuito de Workers.
 - **Los jugadores** no tienen cuenta: el enlace lleva un token de 128 bits al azar, que no se
   puede adivinar, y es lo único que abre la página. Todo lo suyo va bajo `/v/` (la página, su API
   y los estáticos), que es lo único que queda fuera de Access. Ven el partido y las jugadas, y
@@ -136,7 +165,9 @@ npm run bd:local   # crea las tablas en la base de datos local (.wrangler/state)
 npm run dev        # http://localhost:5173, con el Worker en workerd
 ```
 
-En local no hay Cloudflare Access: entras como «entrenador@localhost», y D1 y R2 son locales.
+En local no hace falta entrar: eres «entrenador@localhost», y D1 y R2 son locales. Para ver la
+pantalla de entrar, pulsa «Salir»: como en local no hay correo, el código sale en la propia
+página.
 «Quién ataca» necesita internet la primera vez, para traer el detector de Hugging Face. Las
 pruebas no lo usan: llevan uno de juguete con la misma entrada y las mismas salidas
 (`tests/fixtures/detector_prueba.onnx`, de `tools/crear_modelo_prueba.py`), que siempre ve dos
@@ -183,8 +214,27 @@ las crea `npm run bd:remota`, que va en el comando de despliegue.
 No hace falta ninguna variable de compilación: la versión de Node sale de `.node-version`.
 `/api/salud` dice qué commit está publicado.
 
-**4. Cloudflare Access**, después del primer despliegue. Hasta entonces la API responde 503 fuera
-de localhost: la página busca las jugadas, pero no sube ni guarda nada.
+El cron de la limpieza (`triggers` en `wrangler.jsonc`) lo da de alta el propio `wrangler deploy`.
+
+**4. Altas por email (Cloudflare Email Service).** Hasta tenerlo, fuera de localhost nadie puede
+pedir un código: la página enseña la pantalla de entrar y dice que las altas aún no están activas.
+Para mandar códigos a cualquier dirección hace falta:
+
+1. El **plan de pago de Workers**: Email Sending está en beta pública y, en el gratuito, solo manda
+   a las direcciones verificadas de la cuenta.
+2. Un **dominio con el DNS en Cloudflare**. En *Compute* → *Email Service* → *Email Sending* →
+   *Onboard Domain*, elígelo: Cloudflare añade los registros SPF, DKIM y DMARC.
+3. En `wrangler.jsonc`, el binding y el remitente, que tiene que ser de ese dominio:
+
+   ```jsonc
+   "send_email": [{ "name": "EMAIL" }],
+   "vars": { "CORREO_REMITENTE": "entrar@tu-dominio.es", ... }
+   ```
+
+4. Haz push.
+
+**5. Cloudflare Access (opcional)**, para dejar entrar sin Email Service o para cerrar la web a
+unos pocos emails. Quien entra por Access no ve «Salir»: salir es cosa de Access.
 
 1. *Workers & Pages* → `futsal-scout` → *Settings* → *Domains & Routes*: en `workers.dev` y en
    *Preview URLs*, *Enable Cloudflare Access*. En *Manage Cloudflare Access*, deja solo los
@@ -213,7 +263,7 @@ que no alcanzan para guardar las jugadas de un partido muy corregido; el plan de
 | **2. Equipos y partes** | ✅ detector en el navegador · ✅ colores de cada equipo (se agrupan solos; el entrenador dice cuál es el local) · ✅ posesión por fragmento, sin usar la mitad del campo · ✅ partir por posesión · ✅ filtros por equipo y parte · medida con partidos reales | 3, 5 |
 | **3. Mejor detección** | ✅ balón fuera con la cámara fija y la pista marcada · ✅ posesión por toques · detector afinado para el balón de sala: los scripts y la app listos, faltan datos y una GPU · medida con partidos reales | 2, 3 |
 | **4. Selección y ritmo** ✅ | Estrellas y filtro de «Mi selección» · vídeo de la selección, unido sin recodificar en el navegador · gráfico del ritmo del partido, también para los jugadores | 7, 8 |
-| **5. Usuarios y planes** | Altas por email, planes gratuito, Scout y Pro con límites, pago en maqueta | 10 |
+| **5. Usuarios y planes** ✅ | Entrar con el email (código, sin contraseñas) · planes Gratuito, Scout y Pro con límites de partidos, almacenamiento y días · «Mi cuenta» con lo que se usa · cambio de plan con el pago en maqueta · limpieza de cada hora | 10 |
 | **6. Procesado en servidor** | Cloudflare Containers: análisis sin el navegador abierto, versión ligera a 720p para los jugadores | — |
 | **7. Importar desde Veo** | Solo tras revisar sus condiciones de uso | 9 |
 
@@ -288,6 +338,7 @@ src/cliente/     Navegador (DOM a pelo, sin framework):
   subida/          formulario, metadatos, validación, huella y subidor por partes
   analisis/        worker que lee audio e imagen
   partido/         «Subir y analizar», «Mis partidos», la sección «Jugadas» y «Compartir»
+  cuenta/          la pantalla de entrar, la cabecera y «Mi cuenta» (medidores y planes)
   equipos/         «Quién ataca»: descarga del detector, worker que detecta, la pregunta del color
                    y los balones fuera
   pista/           marcar las cuatro esquinas de la pista sobre el vídeo
@@ -297,11 +348,13 @@ src/cliente/     Navegador (DOM a pelo, sin framework):
   descarga/        recorte a MP4 y unión de la selección, sin recodificar, y nombre del fichero
   api/             llamadas a la API
 src/servidor/    Worker: enrutador mínimo y API
-  acceso/          quién llama (JWT de Cloudflare Access) y de qué web viene
+  acceso/          quién llama (la identidad de localhost y el JWT de Access) y de qué web viene
+  cuentas/         entrar con el email: códigos, sesiones, el correo y la cuenta con su plan
   partidos/        partidos en D1, subida multiparte a R2, vídeo por rangos y jugadas
   compartir/       enlaces de los jugadores y lo que ven con ellos
+  limpieza.ts      el cron de cada hora: sesiones caducadas y partidos que pasan su plan
 src/comun/       Tipos y funciones puras que usan los dos lados (formatos, validación, filtros,
-                 ritmo del partido)
+                 ritmo del partido, planes y cuenta)
 src/nucleo/      Detección, en TypeScript puro y sin DOM (parte copiada de futsal-tracking):
   balonParado/     silbato, movimiento, tramos de balón parado y balón fuera
   deteccion/       preproceso y posproceso de RF-DETR

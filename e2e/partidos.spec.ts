@@ -105,12 +105,12 @@ test('con dos pestañas, la que se quedó atrás no pisa lo corregido en la otra
 test('sin servidor se buscan las jugadas igual, y se avisa de que no se guardan', async ({ page }) => {
   await page.route('**/api/partidos', (ruta) =>
     ruta.request().method() === 'POST'
-      ? ruta.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'Falta configurar Cloudflare Access: la API no está disponible todavía.' }) })
+      ? ruta.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'El servidor no está disponible ahora mismo.' }) })
       : ruta.fallback(),
   );
   await subirYAnalizar(page, 'analisis.mp4');
   await expect(page.locator('#estado-subida-partido')).toHaveText(
-    'No se ha podido subir el vídeo: Falta configurar Cloudflare Access: la API no está disponible todavía.',
+    'No se ha podido subir el vídeo: El servidor no está disponible ahora mismo.',
   );
   await expect(page.locator('#lista-fragmentos .fragmento')).toHaveCount(2);
   await expect(page.locator('#estado-guardado')).toHaveText('Estas jugadas no se guardan: el partido no está en el servidor.');
