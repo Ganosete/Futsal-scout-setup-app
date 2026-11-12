@@ -57,8 +57,10 @@
     --aviso: #f5c451;
     --aviso-fondo: #2b2410;
 
-    --equipo-local: #ff7a3d;
-    --equipo-visitante: #4dabf7;
+    /* Dentro de la banda de luminosidad del modo oscuro (OKLCH L 0,48-0,67), validado con el
+       script de dataviz contra --superficie: los de antes, mas claros, se salian. */
+    --equipo-local: #e8590c;
+    --equipo-visitante: #228be6;
     --sin-equipo: #5c6675;
 
     --sombra: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 30px rgb(0 0 0 / 0.35);

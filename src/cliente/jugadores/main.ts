@@ -4,13 +4,16 @@ import '../estilos/video.css';
 import '../estilos/campos.css';
 import '../estilos/editor.css';
 import '../estilos/jugadores.css';
+import '../estilos/ritmo.css';
 import type { JugadaCompartida, PartidoCompartido } from '../../comun/compartido';
 import { filtrar, pasaFiltro } from '../../comun/filtros';
+import { ritmoDelPartido } from '../../comun/ritmo';
 import { BarraFiltros } from '../barraFiltros';
 import { crearDescargas } from '../descarga/accion';
 import { el } from '../dom';
 import { Reproductor } from '../editor/reproductor';
 import { tituloPartido } from '../partido/textos';
+import { GraficoRitmo } from '../ritmo/graficoRitmo';
 import { leerCompartido, urlVideoCompartido } from './api';
 import { ListaJugadas } from './listaJugadas';
 import { detalleCompartido, tokenDeLaDireccion } from './textos';
@@ -130,6 +133,8 @@ async function iniciar(): Promise<void> {
   reproductor.cargar(origen);
   bloque.hidden = false;
   pintar();
+  el('bloque-ritmo').hidden = false;
+  new GraficoRitmo(el('grafico-ritmo')).pintar(ritmoDelPartido(partido.jugadas, partido.partes), { local: partido.local, visitante: partido.visitante });
 }
 
 void iniciar();

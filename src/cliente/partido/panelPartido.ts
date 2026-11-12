@@ -9,6 +9,7 @@ import { crearEditor } from '../editor/editor';
 import { crearPanelEquipos } from '../equipos/panelEquipos';
 import { Guardado, type EstadoGuardado } from '../editor/guardado';
 import { crearPanelPista } from '../pista/panelPista';
+import { crearBloqueRitmo } from '../ritmo/bloqueRitmo';
 import { huellaFichero } from '../subida/huella';
 import { Barra } from './barra';
 import { crearCompartir } from './compartir';
@@ -71,6 +72,7 @@ export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
   const compartir = crearCompartir();
   const equipos = crearPanelEquipos(editor);
   const pista = crearPanelPista(editor);
+  const ritmo = crearBloqueRitmo();
 
   let turno = 0;
   let abierto: string | null = null;
@@ -112,6 +114,7 @@ export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
     editor.cerrar();
     equipos.cerrar();
     pista.cerrar();
+    ritmo.cerrar();
     barraSubida.ocultar();
     barraAnalisis.ocultar();
     for (const p of [estadoSubida, estadoAnalisis, estadoGuardado]) p.textContent = '';
@@ -142,10 +145,12 @@ export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
         g?.cambiar(edicionDeEstado(e, edicion.tramos));
         pista.pintar(e.pista);
         equipos.actualizar();
+        ritmo.pintar(e, nombre);
       },
     });
     equipos.abrir({ origen, idPartido: id, nombres: nombre });
     pista.pintar(edicion.pista);
+    ritmo.pintar(estadoDeEdicion(edicion), nombre);
     return g;
   }
 

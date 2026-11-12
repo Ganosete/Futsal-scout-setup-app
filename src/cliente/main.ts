@@ -5,6 +5,7 @@ import './estilos/campos.css';
 import './estilos/analisis.css';
 import './estilos/editor.css';
 import './estilos/partidos.css';
+import './estilos/ritmo.css';
 import { el } from './dom';
 import { iniciarMisPartidos } from './partido/misPartidos';
 import { iniciarPanelPartido } from './partido/panelPartido';
