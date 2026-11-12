@@ -39,7 +39,7 @@ export interface OpcionesIdentificador {
 }
 
 const HOSTS_LOCALES = new Set(['localhost', '127.0.0.1', '[::1]']);
-const COOKIE_LOCAL = 'futsal-scout-local';
+export const COOKIE_LOCAL = 'futsal-scout-local';
 /** En localhost, hacer como si no hubiera sesion: es lo que prueba la pantalla de entrar. */
 export const SIN_SESION_LOCAL = 'sin-sesion';
 const NOMBRE_LOCAL = /^[a-z0-9-]{1,40}$/;
@@ -52,7 +52,7 @@ const VIDA_CLAVES_MS = 10 * 60 * 1000;
  */
 const RENOVAR_MINIMO_MS = 60 * 1000;
 
-function cookie(peticion: Request, nombre: string): string | null {
+export function leerCookie(peticion: Request, nombre: string): string | null {
   for (const trozo of (peticion.headers.get('cookie') ?? '').split(';')) {
     const [k, ...v] = trozo.trim().split('=');
     if (k === nombre) return v.join('=');
@@ -60,8 +60,10 @@ function cookie(peticion: Request, nombre: string): string | null {
   return null;
 }
 
+export const esLocal = (peticion: Request): boolean => HOSTS_LOCALES.has(new URL(peticion.url).hostname);
+
 function emailLocal(peticion: Request): string {
-  const nombre = cookie(peticion, COOKIE_LOCAL);
+  const nombre = leerCookie(peticion, COOKIE_LOCAL);
   return `${nombre && NOMBRE_LOCAL.test(nombre) ? nombre : 'entrenador'}@localhost`;
 }
 
@@ -97,8 +99,8 @@ export function crearIdentificador(opciones: OpcionesIdentificador = {}): Identi
   }
 
   return async (peticion, config) => {
-    if (HOSTS_LOCALES.has(new URL(peticion.url).hostname)) {
-      if (cookie(peticion, COOKIE_LOCAL) !== SIN_SESION_LOCAL) return { ok: true, email: emailLocal(peticion) };
+    if (esLocal(peticion)) {
+      if (leerCookie(peticion, COOKIE_LOCAL) !== SIN_SESION_LOCAL) return { ok: true, email: emailLocal(peticion) };
       return ENTRA;
     }
     const equipo = dominioEquipo(config.ACCESS_EQUIPO ?? '');

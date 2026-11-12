@@ -1,4 +1,5 @@
-import { leerCodigo as leerCodigoEnviado, leerEmail } from '../../comun/cuenta';
+import { leerCodigo as leerCodigoEnviado, leerEmail, MINUTOS_CODIGO } from '../../comun/cuenta';
+import { COOKIE_LOCAL, esLocal, leerCookie, SIN_SESION_LOCAL } from '../acceso/identidad';
 import { origenPermitido } from '../acceso/origen';
 import { leerJson } from '../cuerpo';
 import { error, FalloApi, json } from '../respuestas';
@@ -18,22 +19,10 @@ import { carteroCloudflare, hayCorreo, mensajeCodigo, type Cartero } from './cor
  */
 
 export const COOKIE_SESION = 'futsal-scout-sesion';
-const VIDA_CODIGO_MIN = 10;
 const VIDA_SESION_DIAS = 30;
 const INTENTOS = 5;
 /** Un codigo por minuto y email: si no, cualquiera podria llenarle el buzon a otro. */
 const ENTRE_CODIGOS_MS = 60 * 1000;
-const HOSTS_LOCALES = new Set(['localhost', '127.0.0.1', '[::1]']);
-
-const esLocal = (peticion: Request): boolean => HOSTS_LOCALES.has(new URL(peticion.url).hostname);
-
-function cookieDe(peticion: Request, nombre: string): string | null {
-  for (const trozo of (peticion.headers.get('cookie') ?? '').split(';')) {
-    const [k, ...v] = trozo.trim().split('=');
-    if (k === nombre) return v.join('=');
-  }
-  return null;
-}
 
 function cookieSesion(valor: string, segundos: number): string {
   return `${COOKIE_SESION}=${valor}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${segundos}`;
@@ -41,7 +30,7 @@ function cookieSesion(valor: string, segundos: number): string {
 
 /** El email de la sesion de la cookie, si es valida. */
 export async function emailDeLaSesion(peticion: Request, bd: D1Database, ahora = new Date()): Promise<string | null> {
-  const token = cookieDe(peticion, COOKIE_SESION);
+  const token = leerCookie(peticion, COOKIE_SESION);
   if (!token) return null;
   return emailDeSesion(bd, await sha256Hex(token), ahora.toISOString());
 }
@@ -66,12 +55,12 @@ export function crearEntrar(inyectado?: Cartero): { pedirCodigo: Manejador<Env>;
     await guardarCodigo(env.BD, {
       email,
       hash: await hashCodigo(email, codigo),
-      caduca: new Date(ahora.getTime() + VIDA_CODIGO_MIN * 60_000).toISOString(),
+      caduca: new Date(ahora.getTime() + MINUTOS_CODIGO * 60_000).toISOString(),
       pedido: ahora.toISOString(),
     });
     if (local) return json({ enviado: true, codigoLocal: codigo });
     try {
-      await cartero(env, mensajeCodigo(email, codigo, VIDA_CODIGO_MIN));
+      await cartero(env, mensajeCodigo(email, codigo, MINUTOS_CODIGO));
     } catch (e) {
       console.error('No se ha podido mandar el código', e);
       await borrarCodigo(env.BD, email);
@@ -108,9 +97,13 @@ export function crearEntrar(inyectado?: Cartero): { pedirCodigo: Manejador<Env>;
 
   const salir: Manejador<Env> = async (peticion, _p, env) => {
     if (!origenPermitido(peticion)) return error(403, 'Esta petición no viene de Futsal Scout.');
-    const token = cookieDe(peticion, COOKIE_SESION);
+    const token = leerCookie(peticion, COOKIE_SESION);
     if (token) await cerrarSesion(env.BD, await sha256Hex(token));
-    return new Response(null, { status: 204, headers: { 'cache-control': 'no-store', 'set-cookie': cookieSesion('', 0) } });
+    const cabeceras = new Headers({ 'cache-control': 'no-store' });
+    cabeceras.append('set-cookie', cookieSesion('', 0));
+    // En localhost se volveria a entrar sola con la identidad de pruebas: salir la apaga tambien.
+    if (esLocal(peticion)) cabeceras.append('set-cookie', `${COOKIE_LOCAL}=${SIN_SESION_LOCAL}; Path=/; SameSite=Lax`);
+    return new Response(null, { status: 204, headers: cabeceras });
   };
 
   return { pedirCodigo, entrar, salir };

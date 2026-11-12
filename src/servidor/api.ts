@@ -29,7 +29,7 @@ export function crearApi(identificar: Identificador, traer: typeof fetch = fetch
       const deSesion = await emailDeLaSesion(peticion, env.BD);
       const quien = deSesion ? { ok: true as const, email: deSesion } : await identificar(peticion, env);
       if (!quien.ok) return error(quien.estado, quien.mensaje);
-      return manejar(peticion, parametros, { env, dueno: quien.email });
+      return manejar(peticion, parametros, { env, dueno: quien.email, sesion: deSesion !== null });
     };
   const { pedirCodigo, entrar, salir } = crearEntrar(cartero);
 

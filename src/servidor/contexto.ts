@@ -5,6 +5,8 @@ import { leerPartido, type FilaPartido } from './partidos/almacen';
 export interface Contexto {
   env: Env;
   dueno: string;
+  /** Si ha entrado con su email (sesion propia), y no por Access o en localhost. */
+  sesion: boolean;
 }
 
 /** El partido de quien llama, o 404: el de otro no existe. */

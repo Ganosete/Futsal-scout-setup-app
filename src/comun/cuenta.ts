@@ -6,6 +6,8 @@ import type { IdPlan, Uso } from './planes';
  */
 
 export const LARGO_CODIGO = 6;
+/** Lo que vale un codigo: lo cuenta el correo y lo dice la pantalla de entrar. */
+export const MINUTOS_CODIGO = 10;
 
 /** Lo que responde GET /api/cuenta, y PUT /api/cuenta/plan despues del cambio. */
 export interface Cuenta {
@@ -15,6 +17,8 @@ export interface Cuenta {
   /** Desde cuando tiene este plan: de ahi cuentan tambien los dias de lo ya subido. */
   planDesde: string;
   uso: Uso;
+  /** No, si ha entrado por Access: salir de ahi es cosa de Access. */
+  puedeSalir: boolean;
 }
 
 /** Basta con que parezca un email: la prueba de verdad es que el codigo llegue. */

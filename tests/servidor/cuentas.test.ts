@@ -97,6 +97,18 @@ describe('entrar con el email', () => {
     expect((await llamar('GET', '/api/cuenta', undefined, cookie)).status).toBe(401);
   });
 
+  it('en localhost, salir apaga tambien la identidad de pruebas: si no, se volveria a entrar sola', async () => {
+    const r = await llamar('POST', '/api/salir', undefined, 'futsal-scout-local=un-entrenador');
+    expect(r.headers.getSetCookie()).toContain('futsal-scout-local=sin-sesion; Path=/; SameSite=Lax');
+    expect((await llamar('GET', '/api/cuenta', undefined, 'futsal-scout-local=sin-sesion')).status).toBe(401);
+  });
+
+  it('con sesion propia, o en localhost, la cuenta dice que se puede salir', async () => {
+    const conSesion = await entrarComo(emailNuevo());
+    expect(await (await llamar('GET', '/api/cuenta', undefined, conSesion)).json()).toMatchObject({ puedeSalir: true });
+    expect(await (await llamar('GET', '/api/cuenta', undefined, 'futsal-scout-local=un-entrenador')).json()).toMatchObject({ puedeSalir: true });
+  });
+
   it('un email que no lo parece, o una peticion desde otra web, no valen', async () => {
     expect(await (await llamar('POST', '/api/entrar/codigo', { email: 'no-es-un-email' })).json()).toEqual({ error: 'Escribe un email válido.' });
     const deFuera = await llamar('POST', '/api/entrar/codigo', { email: emailNuevo() }, SIN_NADIE, { origin: 'https://otra.web' });
@@ -105,6 +117,12 @@ describe('entrar con el email', () => {
 });
 
 describe('fuera de localhost', () => {
+  it('quien entra por Access no sale desde aqui: eso es cosa de Access', async () => {
+    const api = crearApi(async () => ({ ok: true, email: 'por-access@club.es' }));
+    const r = await api(new Request('https://scout.club.es/api/cuenta'), env);
+    expect(await r.json()).toMatchObject({ email: 'por-access@club.es', puedeSalir: false });
+  });
+
   it('sin Email Service configurado no se mandan codigos (503)', async () => {
     const api = crearApi(crearIdentificador());
     const r = await api(new Request('https://scout.club.es/api/entrar/codigo', { method: 'POST', body: JSON.stringify({ email: emailNuevo() }) }), env);
