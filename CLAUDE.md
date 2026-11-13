@@ -31,10 +31,14 @@ está en el README.
   genera `wrangler types`); `src/comun/` son tipos y funciones puras que usan los dos.
 - `src/nucleo/` es la detección: **TypeScript puro, sin DOM ni APIs del Worker**, porque tiene
   que correr en el navegador, en un worker del navegador y en Node (fase 6, en Containers).
+- `src/contenedor/` es el programa del contenedor (fase 6): Node con ffmpeg, sin DOM ni APIs del
+  Worker (`tsconfig.contenedor.json`). Usa el mismo núcleo y lo mismo de `src/comun/` que el
+  navegador: solo cambia quién decodifica.
 - **Un fragmento es `[desde, hasta)` sobre el vídeo original.** No se recorta nada hasta que
   alguien descarga, y entonces sin recodificar.
 - **Lo que decide el usuario manda sobre lo automático.** Un fragmento corregido a mano lleva
-  `manual` y ningún análisis nuevo lo pisa.
+  `manual` y ningún análisis nuevo lo pisa. La edición del servidor solo se guarda si el partido
+  aún no tiene (`If-None-Match: *`).
 - **Nunca se carga un partido entero en memoria.** Se lee por acceso aleatorio (local) o por
   rangos HTTP (R2).
 - **Lo pesado va en un worker del navegador**; nada bloquea la interfaz.
@@ -89,6 +93,11 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
 - **Con un `vite preview` ya en marcha en el 4173, `npm run test:e2e` lo reutiliza**
   (`reuseExistingServer` fuera de CI) y prueba esa compilación con la base de datos de
   desarrollo: antes de las pruebas, hay que pararlo.
+- **Las pruebas del contenedor** (`tests/contenedor/`) usan ffmpeg de verdad y los vídeos de
+  prueba, contra una pasarela de mentira (`pasarelaFalsa.ts`). Sin ffmpeg se saltan en local; en la
+  CI no. `programa.test.ts` solo corre con `CONTENEDOR_PROGRAMA` (el fichero compilado) o
+  `CONTENEDOR_IMAGEN` (la imagen de Docker): el job `contenedor` de la CI construye la imagen y le
+  pasa esa prueba.
 - **Nada de ajustar umbrales hasta que una prueba pase.** Si la medida real no llega, el que está
   mal es el umbral: se apunta el número medido y qué significa.
 
@@ -98,6 +107,8 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
   preguntar. Se trabaja en ramas; cada una tiene su versión de vista previa.
 - Commits pequeños, en castellano, que expliquen el porqué.
 - Antes de cada push: `npm run typecheck`, `npm test` y `npm run test:e2e`.
+- **La fase 6 va en su rama (`claude/fase-6-servidor`)**: con el contenedor en `wrangler.jsonc`, el
+  despliegue pide el plan de pago de Workers, y en el gratuito falla.
 
 ## Cosas que conviene no olvidar
 
@@ -154,6 +165,35 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
   los partidos de cada prueba.
 - **Tras `vite build`, un `vite preview` que ya estaba en marcha sigue con la lista de estáticos
   vieja**: lo nuevo le llega como `index.html`. Hay que reiniciarlo.
+- **El contenedor solo alcanza `http://almacen.interno`** (arranca con `enableInternet: false`): el
+  Durable Object lo intercepta y lo atiende `procesado/pasarela.ts`, con el partido y su dueño en
+  `props`. Para el vídeo, las señales y la edición usa los manejadores de la API del entrenador. El
+  contenedor no ve otro partido ni ninguna clave.
+- **Una sola pasada de ffmpeg** (`contenedor/ffmpeg.ts`): el audio en PCM por el descriptor 3, la
+  imagen de 96 × 54 en RGBA por el 4 y la versión ligera a disco. `aresample=async=1:first_pts=0`
+  pone la primera muestra en el 0 y rellena los huecos; ffmpeg aplica la lista de edición. El
+  tamaño de la imagen y los fotogramas por segundo salen del núcleo (`IMAGEN_ANALISIS`,
+  `FPS_ANALISIS`): si cambian en un lado y no en el otro, la mediana de los umbrales cambia.
+- **Medido con los vídeos de prueba en el servidor:** `analisis.mp4` da [0, 19,981) y [30, 60);
+  `recortado.mp4`, el silbato en 14,501 s y el segundo fragmento desde 24,4 s (la imagen se mira
+  cada 0,2 s). Lo mismo que el navegador.
+- **Toda la decisión del Durable Object está en `procesado/orquesta.ts`**, que se prueba con un
+  contenedor de mentira. `procesador.ts` es solo el enchufe con `ctx.container` y no se puede
+  probar sin Containers de verdad: que siga siendo fino.
+- **En local y en las pruebas no hay contenedores** (`dev.enable_containers: false`, que se
+  conserva en la salida de `vite build`, así que `vite preview` tampoco construye la imagen). El
+  Durable Object de verdad contesta `no-disponible` y la API, 503. Las pruebas de la API inyectan
+  un `Lanzador`, como el cartero del correo.
+- **Una petición creada dentro del Worker no lleva `Content-Length`**, aunque su cuerpo tenga
+  tamaño conocido: las pruebas que llaman a `atenderPasarela` sin pasar por `fetch` lo ponen a mano,
+  como lo manda el contenedor por HTTP.
+- **La imagen del contenedor sale de `mirror.gcr.io`, fijada por digest**: Docker Hub limita las
+  descargas sin cuenta. Desde este entorno no se llega a `deb.debian.org`, así que la imagen solo
+  se construye y se prueba en la CI.
+- **`npm run build` compila también el programa del contenedor** (`dist/contenedor/principal.mjs`):
+  el Dockerfile lo copia de ahí, así que sin compilarlo antes no se construye la imagen.
+- **Los jugadores ven la versión ligera si la hay** (`procesados.ligero_tamano`); el entrenador,
+  siempre el original. Lo que se bajan los jugadores sale de la ligera.
 - **Los medidores de «Mi cuenta» siguen la skill de dataviz** (`cliente/cuenta/medidas.ts`): lista
   con las barras alineadas (subgrid) y la pista del mismo color que el relleno. El naranja del
   acento y el ámbar de «Casi lleno» no se distinguen con daltonismo (lo dice el validador): el

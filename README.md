@@ -10,8 +10,8 @@ compartir los clips con tus jugadores.
 
 ## Estado
 
-**Fases 1, 2, 4 y 5 hechas, y de la 3 todo menos el detector afinado**, que necesita datos y una
-GPU. Falta medirlo todo con partidos reales. Lo que hay:
+**Fases 1, 2, 4, 5 y 6 hechas, y de la 3 todo menos el detector afinado**, que necesita datos y
+una GPU. Falta medirlo todo con partidos reales. Lo que hay:
 
 1. **Nuevo partido:** eliges el vídeo y se comprueba al momento (duración, imagen, sonido,
    tamaño, y si hay algo que impida usarlo o que vaya a salir peor).
@@ -50,17 +50,23 @@ GPU. Falta medirlo todo con partidos reales. Lo que hay:
 13. **Planes:** Gratuito, Scout y Pro, cada uno con sus partidos, su almacenamiento y los días que
    se guarda cada partido. «Mi cuenta» enseña lo que usas y deja cambiar de plan, y «Mis partidos»
    dice cuándo se borra cada uno. **El pago es una maqueta:** no pide datos y no cobra nada.
+14. **Procesado en el servidor** (Scout y Pro): al acabar de subir, un contenedor de Cloudflare lee
+   el vídeo, busca las jugadas como el navegador si aún no las hay, y hace una versión ligera a
+   720p, que es la que ven y se bajan los jugadores. Con la casilla «Que busque las jugadas el
+   servidor», el navegador solo sube y se puede cerrar la página en cuanto acaba. «Mis partidos»
+   dice en qué va, y deja pedirlo o reintentarlo.
 
 **Las cifras de los planes son provisionales** (`src/comun/planes.ts`, un cambio de una línea):
 
-| Plan | Precio | Partidos | Almacenamiento | Cada partido se guarda |
-|---|---|---|---|---|
-| Gratuito | 0 € | 3 | 10 GB | 30 días |
-| Scout | 9 € al mes | 30 | 150 GB | 1 año |
-| Pro | 19 € al mes | sin límite | 500 GB | sin límite |
+| Plan | Precio | Partidos | Almacenamiento | Cada partido se guarda | Procesado en el servidor |
+|---|---|---|---|---|---|
+| Gratuito | 0 € | 3 | 10 GB | 30 días | no |
+| Scout | 9 € al mes | 30 | 150 GB | 1 año | sí |
+| Pro | 19 € al mes | sin límite | 500 GB | sin límite | sí |
 
-Lo que cuesta de verdad es el almacenamiento en R2, a unos 0,015 $ por GB y mes: un plan gratuito
-lleno son 0,15 $ al mes.
+Lo que cuesta de verdad es el almacenamiento en R2, a unos 0,015 $ por GB y mes (un plan gratuito
+lleno son 0,15 $ al mes), y el procesado en el servidor, que va por segundos de CPU (ver «Cómo
+funciona»).
 
 **Lo que tarda «Quién ataca».** La primera vez descarga el detector (108 MB) y lo guarda en el
 navegador. Con tarjeta gráfica (WebGPU) mira 3 fotogramas por segundo de juego. Sin ella mira uno
@@ -94,13 +100,16 @@ Navegador del entrenador
   │  (con la pista marcada: el balón en metros → balones fuera y toques)
   └─ descarga en MP4 sin recodificar, leyendo de R2 solo el clip
 Worker de Cloudflare: la página, la API y la limpieza de cada hora
-R2 (UE): vídeos y jugadas   D1: partidos, enlaces y cuentas
-Jugadores: /v/<token> → las jugadas, para verlas y descargarlas, sin cuenta
+  └─ un Durable Object por partido con su contenedor (Scout y Pro), en la UE y sin internet:
+     ffmpeg lee el vídeo una vez → jugadas (el mismo núcleo que el navegador) + versión a 720p
+R2 (UE): vídeos, versión ligera y jugadas   D1: partidos, enlaces, cuentas y procesado
+Jugadores: /v/<token> → las jugadas, para verlas y descargarlas, sin cuenta (en 720p si la hay)
 ```
 
 - **El análisis corre en el navegador** mientras se sube el vídeo, que ya está ahí: un Worker no
-  puede decodificar vídeo, y así no cuesta servidor. Cuando haga falta analizar sin el navegador
-  abierto (o importar desde Veo), irá a Cloudflare Containers con el mismo código (fase 6).
+  puede decodificar vídeo, y así no cuesta servidor. Con el Scout y el Pro también lo puede hacer
+  un contenedor al acabar la subida, con el mismo núcleo (fase 6, más abajo); es también por donde
+  entraría la importación desde Veo, donde no hay fichero en el ordenador.
 - **El corte es virtual.** Un fragmento es solo `[desde, hasta)` sobre el vídeo original: verlo es
   saltar a ese instante y corregirlo es cambiar dos números. Solo se genera un fichero cuando
   alguien descarga, y se hace sin recodificar: copiando los bytes de ese tramo y rehaciendo el
@@ -149,6 +158,19 @@ Jugadores: /v/<token> → las jugadas, para verlas y descargarlas, sin cuenta
   mejor dejar balón parado dentro que cortar juego. Los toques son que el balón cambie de
   dirección o de velocidad junto a un jugador; cada instante vota por el equipo del último que lo
   tocó en ese fragmento, así que un pase que roza a un rival no le da el balón.
+- **El procesado en el servidor** (fase 6) es un contenedor de Cloudflare por partido, con Node y
+  ffmpeg. Una sola pasada decodifica el vídeo una vez y saca tres cosas: el audio para el silbato,
+  la imagen diminuta para el movimiento y la versión ligera (720p como mucho, un fotograma clave
+  cada 2 s, girada si el móvil grabó en vertical y sin metadatos como el GPS). Lo que se calcula
+  con eso es el mismo núcleo que en el navegador, y da lo mismo: con los vídeos de prueba, los
+  mismos fragmentos. Las jugadas solo se guardan si el partido aún no las tiene, para no pisar lo
+  del navegador ni lo corregido a mano. El contenedor arranca sin internet y sin claves: solo
+  alcanza `http://almacen.interno`, que el Durable Object intercepta y atiende una pasarela del
+  Worker con acceso a ese partido y a nada más. El Durable Object le pregunta cada 15 s en qué va
+  y lo apunta para la página; si se cae, lo arranca otra vez una vez. **Coste**, sin medir con
+  partidos de verdad: un standard-4 (4 vCPU, 12 GiB) que tardase 40 min con la CPU llena serían
+  unos 0,27 $ (0,19 de CPU, 0,07 de memoria); el plan de pago incluye al mes 375 minutos de vCPU
+  y 25 GiB-hora: unos dos partidos así (la CPU es lo que se acaba antes).
 - **El detector** lo trae el Worker de Hugging Face, así que la página no habla con nadie más
   (la CSP solo deja conectar con el propio origen). El navegador comprueba su tamaño y su SHA-256
   y lo guarda en su caché.
@@ -168,6 +190,11 @@ npm run dev        # http://localhost:5173, con el Worker en workerd
 En local no hace falta entrar: eres «entrenador@localhost», y D1 y R2 son locales. Para ver la
 pantalla de entrar, pulsa «Salir»: como en local no hay correo, el código sale en la propia
 página.
+
+En local tampoco se arrancan contenedores (`dev.enable_containers` en `wrangler.jsonc`): el
+procesado en el servidor contesta que no está disponible y todo lo demás funciona sin Docker. Para
+probarlo en local hace falta Docker: pon `enable_containers` a `true` y compila antes el programa
+del contenedor con `npm run contenedor:compilar`.
 «Quién ataca» necesita internet la primera vez, para traer el detector de Hugging Face. Las
 pruebas no lo usan: llevan uno de juguete con la misma entrada y las mismas salidas
 (`tests/fixtures/detector_prueba.onnx`, de `tools/crear_modelo_prueba.py`), que siempre ve dos
@@ -185,6 +212,7 @@ jugadores y el balón a los pies de uno.
 | `npm run bd:remota` | Las aplica a la de producción. |
 | `npm run deploy` | Compila, migra la base de datos y publica con wrangler (hace falta `npx wrangler login`). |
 | `npm run videos:prueba` | Regenera los vídeos de prueba de `tests/fixtures/` (hace falta ffmpeg). |
+| `npm run contenedor:compilar` | Compila el programa del contenedor en `dist/contenedor/principal.mjs` (`npm run build` ya lo hace). |
 
 ## Desplegar en Cloudflare
 
@@ -250,6 +278,15 @@ unos pocos emails. Quien entra por Access no ve «Salir»: salir es cosa de Acce
    *Everyone*. Una aplicación con ruta manda sobre la de todo el Worker.
 4. Haz push.
 
+**6. Procesado en el servidor (Cloudflare Containers).** Pide el **plan de pago de Workers**: con
+la configuración del contenedor en `wrangler.jsonc`, en el plan gratuito el despliegue falla. Por
+eso la fase 6 va en su propia rama. Con el plan de pago no hay que hacer nada más:
+`npm run build` compila el programa del contenedor y `wrangler deploy` construye la imagen
+(`contenedor/Dockerfile`), la sube al registro de Cloudflare y crea la aplicación. El primer
+despliegue tarda unos minutos más en tener los contenedores listos. `PROCESADO_SERVIDOR: "no"`
+en `vars` lo apaga sin quitar la configuración: los partidos se analizan solo en el navegador y no
+hay versión ligera.
+
 **Límites del plan gratuito de Workers:** cuerpos de hasta 100 MB (las partes de la subida son de
 50 MiB), 100.000 peticiones al día (un partido de 4 GB son unas 80) y 10 ms de CPU por petición,
 que no alcanzan para guardar las jugadas de un partido muy corregido; el plan de pago los quita.
@@ -264,7 +301,7 @@ que no alcanzan para guardar las jugadas de un partido muy corregido; el plan de
 | **3. Mejor detección** | ✅ balón fuera con la cámara fija y la pista marcada · ✅ posesión por toques · detector afinado para el balón de sala: los scripts y la app listos, faltan datos y una GPU · medida con partidos reales | 2, 3 |
 | **4. Selección y ritmo** ✅ | Estrellas y filtro de «Mi selección» · vídeo de la selección, unido sin recodificar en el navegador · gráfico del ritmo del partido, también para los jugadores | 7, 8 |
 | **5. Usuarios y planes** ✅ | Entrar con el email (código, sin contraseñas) · planes Gratuito, Scout y Pro con límites de partidos, almacenamiento y días · «Mi cuenta» con lo que se usa · cambio de plan con el pago en maqueta · limpieza de cada hora | 10 |
-| **6. Procesado en servidor** | Cloudflare Containers: análisis sin el navegador abierto, versión ligera a 720p para los jugadores | — |
+| **6. Procesado en servidor** ✅ | Cloudflare Containers: las jugadas sin el navegador abierto (el mismo núcleo, con ffmpeg) y versión ligera a 720p para los jugadores · medida con partidos reales · «Quién ataca» en el servidor, que es lo que más tarda sin tarjeta gráfica | — |
 | **7. Importar desde Veo** | Solo tras revisar sus condiciones de uso | 9 |
 
 **Lo que se espera de la detección, sin adornar:** las faltas, los goles, los tiempos muertos y el
@@ -352,7 +389,9 @@ src/servidor/    Worker: enrutador mínimo y API
   cuentas/         entrar con el email: códigos, sesiones, el correo y la cuenta con su plan
   partidos/        partidos en D1, subida multiparte a R2, vídeo por rangos y jugadas
   compartir/       enlaces de los jugadores y lo que ven con ellos
+  procesado/       el Durable Object con su contenedor, la pasarela del contenedor y su API
   limpieza.ts      el cron de cada hora: sesiones caducadas y partidos que pasan su plan
+src/contenedor/  El programa del contenedor (Node con ffmpeg): la pasada, el trabajo y su servidor HTTP
 src/comun/       Tipos y funciones puras que usan los dos lados (formatos, validación, filtros,
                  ritmo del partido, planes y cuenta)
 src/nucleo/      Detección, en TypeScript puro y sin DOM (parte copiada de futsal-tracking):
@@ -361,6 +400,7 @@ src/nucleo/      Detección, en TypeScript puro y sin DOM (parte copiada de futs
   equipos/         color de camiseta, los dos grupos, la posesión y los toques
   pista/           homografía, las cuatro esquinas y las medidas de la pista
   balon/           el balón en metros: Kalman y trayectoria
+contenedor/      El Dockerfile de la imagen del contenedor
 migrations/      Esquema de D1
 tests/           Pruebas unitarias (Vitest, en Node), del Worker (tests/servidor, en workerd) y vídeos
 e2e/             Pruebas de la página (Playwright)
@@ -376,3 +416,6 @@ tools/           Scripts que no forman parte de la aplicación: vídeos y detect
   navegador): MIT.
 - El detector, RF-DETR Nano: pesos de Roboflow con licencia Apache 2.0, convertidos a ONNX por
   PierreMarieCurie (MIT). No va en el repositorio: el Worker lo trae de Hugging Face.
+- [FFmpeg](https://ffmpeg.org/), en el contenedor: el paquete de Debian, que con libx264 es GPL. Se
+  ejecuta como programa aparte, sin enlazarlo con el nuestro, y la imagen no se distribuye: está en
+  el registro privado de Cloudflare.
