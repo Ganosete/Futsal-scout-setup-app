@@ -5,15 +5,16 @@ import { claves, type FilaPartido } from './almacen';
 import { interpretarRango } from './rango';
 
 /**
- * El video original, por rangos: el <video> salta de un fragmento a otro y
- * Mediabunny lee solo el trozo que recorta. Nada se carga en el Worker: el
- * cuerpo de R2 pasa tal cual a la respuesta. Lo usan el entrenador y los
- * jugadores con su enlace.
+ * El video, por rangos: el <video> salta de un fragmento a otro y Mediabunny
+ * lee solo el trozo que recorta. Nada se carga en el Worker: el cuerpo de R2
+ * pasa tal cual a la respuesta. El entrenador ve el original; los jugadores,
+ * la version ligera si ya la hay (`clave`).
  */
 export async function servirVideo(
   peticion: Request,
   p: Pick<FilaPartido, 'id' | 'tamano' | 'tipo' | 'estado'>,
   videos: R2Bucket,
+  clave = claves.video(p.id),
 ): Promise<Response> {
   if (p.estado !== 'subido') throw new FalloApi(409, 'El vídeo todavía se está subiendo.');
   const rango = interpretarRango(peticion.headers.get('range'), p.tamano);
@@ -33,7 +34,7 @@ export async function servirVideo(
   // iria troceada y el navegador no sabria cuanto falta.
   cabeceras.set('content-length', String(parte ? parte.hasta - parte.desde + 1 : p.tamano));
   if (peticion.method === 'HEAD') return new Response(null, { status: estado, headers: cabeceras });
-  const objeto = await videos.get(claves.video(p.id), parte ? { range: { offset: parte.desde, length: parte.hasta - parte.desde + 1 } } : {});
+  const objeto = await videos.get(clave, parte ? { range: { offset: parte.desde, length: parte.hasta - parte.desde + 1 } } : {});
   if (!objeto) throw new FalloApi(404, 'No se encuentra el vídeo de este partido.');
   cabeceras.set('etag', objeto.httpEtag);
   return new Response(objeto.body, { status: estado, headers: cabeceras });

@@ -10,7 +10,9 @@ import { crearServirModelo, verManifiesto } from './modelos';
 import { guardarDetecciones, leerDetecciones } from './partidos/detecciones';
 import { guardar, guardarSenales, leer } from './partidos/edicion';
 import { borrar, crear, listar, ver } from './partidos/partidos';
-import { completar, subirParte } from './partidos/subida';
+import { crearCompletar, subirParte } from './partidos/subida';
+import { crearProcesar } from './procesado/api';
+import { lanzarConDurableObject, type Lanzador } from './procesado/lanzar';
 import { video } from './partidos/video';
 import { error } from './respuestas';
 import { crearEnrutador, type Manejador } from './rutas';
@@ -21,7 +23,12 @@ import { salud } from './salud';
  * resto pide saber quien llama (su sesion, o Access) y, lo que no es GET, que
  * venga de la propia web.
  */
-export function crearApi(identificar: Identificador, traer: typeof fetch = fetch, cartero?: Cartero): (peticion: Request, env: Env) => Promise<Response> {
+export function crearApi(
+  identificar: Identificador,
+  traer: typeof fetch = fetch,
+  cartero?: Cartero,
+  lanzar: Lanzador = lanzarConDurableObject,
+): (peticion: Request, env: Env) => Promise<Response> {
   const privada =
     (manejar: Manejador<Contexto>): Manejador<Env> =>
     async (peticion, parametros, env) => {
@@ -45,7 +52,8 @@ export function crearApi(identificar: Identificador, traer: typeof fetch = fetch
     { metodo: 'GET', patron: '/api/partidos/:id', manejar: privada(ver) },
     { metodo: 'DELETE', patron: '/api/partidos/:id', manejar: privada(borrar) },
     { metodo: 'PUT', patron: '/api/partidos/:id/partes/:numero', manejar: privada(subirParte) },
-    { metodo: 'POST', patron: '/api/partidos/:id/completar', manejar: privada(completar) },
+    { metodo: 'POST', patron: '/api/partidos/:id/completar', manejar: privada(crearCompletar(lanzar)) },
+    { metodo: 'POST', patron: '/api/partidos/:id/procesar', manejar: privada(crearProcesar(lanzar)) },
     { metodo: 'GET', patron: '/api/partidos/:id/video', manejar: privada(video) },
     { metodo: 'GET', patron: '/api/partidos/:id/edicion', manejar: privada(leer) },
     { metodo: 'PUT', patron: '/api/partidos/:id/edicion', manejar: privada(guardar) },

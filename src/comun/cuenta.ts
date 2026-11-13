@@ -19,6 +19,8 @@ export interface Cuenta {
   uso: Uso;
   /** No, si ha entrado por Access: salir de ahi es cosa de Access. */
   puedeSalir: boolean;
+  /** Si sus partidos se pueden procesar en el servidor: su plan lo incluye y esta web lo tiene encendido. */
+  servidor: boolean;
 }
 
 /** Basta con que parezca un email: la prueba de verdad es que el codigo llegue. */

@@ -1,6 +1,7 @@
 import type { Cuenta } from '../../comun/cuenta';
 import { esIdPlan, motivoParaNoCambiar, plan } from '../../comun/planes';
 import { esLocal } from '../acceso/identidad';
+import { procesadoEncendido } from '../procesado/lanzar';
 import type { Contexto } from '../contexto';
 import { leerJson } from '../cuerpo';
 import { usoDe } from '../partidos/almacen';
@@ -17,7 +18,16 @@ import { cambiarPlan, darDeAlta } from './almacen';
 async function cuentaDe(peticion: Request, { env, dueno, sesion }: Contexto, ahora: Date): Promise<Cuenta> {
   const [u, uso] = await Promise.all([darDeAlta(env.BD, dueno, ahora.toISOString()), usoDe(env.BD, dueno)]);
   // En localhost, salir apaga la identidad de pruebas (entrar.ts): tambien se puede.
-  return { email: u.email, plan: plan(u.plan).id, alta: u.creado, planDesde: u.plan_desde, uso, puedeSalir: sesion || esLocal(peticion) };
+  const suPlan = plan(u.plan);
+  return {
+    email: u.email,
+    plan: suPlan.id,
+    alta: u.creado,
+    planDesde: u.plan_desde,
+    uso,
+    puedeSalir: sesion || esLocal(peticion),
+    servidor: suPlan.servidor && procesadoEncendido(env),
+  };
 }
 
 export async function verCuenta(peticion: Request, _p: Parametros, ctx: Contexto): Promise<Response> {
@@ -37,5 +47,5 @@ export async function cambiarDePlan(peticion: Request, _p: Parametros, ctx: Cont
   const motivo = motivoParaNoCambiar(plan(id), antes.uso);
   if (motivo) throw new FalloApi(409, motivo);
   await cambiarPlan(env.BD, dueno, id, ahora.toISOString());
-  return json({ ...antes, plan: id, planDesde: ahora.toISOString() } satisfies Cuenta);
+  return json({ ...antes, plan: id, planDesde: ahora.toISOString(), servidor: plan(id).servidor && procesadoEncendido(env) } satisfies Cuenta);
 }

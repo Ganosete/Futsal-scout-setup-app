@@ -1,4 +1,5 @@
 import { validarDatosPartido } from './datosPartido';
+import type { Procesado } from './procesado';
 
 /**
  * Un partido tal como lo cuenta la API, y lo que manda el navegador para
@@ -36,6 +37,8 @@ export interface Partido {
   creado: string;
   /** Cuando lo borra la retencion del plan de su dueno; null si no se borra. */
   seBorra: string | null;
+  /** En que va en el servidor (fase 6); null si nunca se ha procesado alli. */
+  servidor: Procesado | null;
 }
 
 /** Lo que responde POST /api/partidos: el partido y lo que falta por subir. */

@@ -50,6 +50,9 @@ export async function verCompartido(_peticion: Request, { token }: Parametros, e
   return json(compartido(e, edicion));
 }
 
+/** La version ligera si ya la hay: en el movil carga antes y lo que se bajan pesa mucho menos. */
 export async function videoCompartido(peticion: Request, { token }: Parametros, env: Env): Promise<Response> {
-  return servirVideo(peticion, await enlaceVigente(env, token), env.VIDEOS);
+  const e = await enlaceVigente(env, token);
+  if (e.ligero_tamano === null) return servirVideo(peticion, e, env.VIDEOS);
+  return servirVideo(peticion, { ...e, tamano: e.ligero_tamano, tipo: 'video/mp4' }, env.VIDEOS, claves.ligero(e.id));
 }

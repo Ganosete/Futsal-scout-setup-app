@@ -3,6 +3,10 @@ import { crearApi, crearApiJugadores } from './api';
 import { limpiar } from './limpieza';
 import { paginaJugadores } from './paginaJugadores';
 
+// El Durable Object del procesado en el servidor y la pasarela de su contenedor (fase 6).
+export { PasarelaProcesado } from './procesado/pasarela';
+export { Procesador } from './procesado/procesador';
+
 const api = crearApi(crearIdentificador());
 const apiJugadores = crearApiJugadores();
 

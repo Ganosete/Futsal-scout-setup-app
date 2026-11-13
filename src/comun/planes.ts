@@ -23,12 +23,17 @@ export interface Plan {
   almacenamientoBytes: number;
   /** Dias que se guarda cada partido desde que se sube; null: sin limite. */
   retencionDias: number | null;
+  /**
+   * Si lo analiza el servidor y hace la version ligera para los jugadores
+   * (fase 6). Es lo unico que cuesta CPU: unos centimos por partido.
+   */
+  servidor: boolean;
 }
 
 export const PLANES: readonly Plan[] = [
-  { id: 'gratuito', nombre: 'Gratuito', precioMes: 0, partidos: 3, almacenamientoBytes: 10 * GB, retencionDias: 30 },
-  { id: 'scout', nombre: 'Scout', precioMes: 9, partidos: 30, almacenamientoBytes: 150 * GB, retencionDias: 365 },
-  { id: 'pro', nombre: 'Pro', precioMes: 19, partidos: null, almacenamientoBytes: 500 * GB, retencionDias: null },
+  { id: 'gratuito', nombre: 'Gratuito', precioMes: 0, partidos: 3, almacenamientoBytes: 10 * GB, retencionDias: 30, servidor: false },
+  { id: 'scout', nombre: 'Scout', precioMes: 9, partidos: 30, almacenamientoBytes: 150 * GB, retencionDias: 365, servidor: true },
+  { id: 'pro', nombre: 'Pro', precioMes: 19, partidos: null, almacenamientoBytes: 500 * GB, retencionDias: null, servidor: true },
 ];
 
 export const esIdPlan = (x: unknown): x is IdPlan => PLANES.some((p) => p.id === x);

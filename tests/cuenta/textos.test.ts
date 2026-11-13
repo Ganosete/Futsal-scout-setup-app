@@ -44,7 +44,7 @@ describe('medidasDeUso', () => {
 
 describe('cambiar de plan', () => {
   it('el resumen: el plan y desde cuando', () => {
-    const c: Cuenta = { email: 'ana@club.es', plan: 'scout', alta: '2026-10-01T09:00:00.000Z', planDesde: '2026-11-12T10:00:00.000Z', uso: { partidos: 0, bytes: 0 }, puedeSalir: true };
+    const c: Cuenta = { email: 'ana@club.es', plan: 'scout', alta: '2026-10-01T09:00:00.000Z', planDesde: '2026-11-12T10:00:00.000Z', uso: { partidos: 0, bytes: 0 }, puedeSalir: true, servidor: false };
     expect(resumenPlan(c, 'UTC')).toBe('Plan Scout desde el 12 de noviembre de 2026');
   });
 

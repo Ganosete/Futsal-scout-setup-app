@@ -34,6 +34,33 @@
       "jurisdiction": "eu"
     }
   ],
+  // El procesado en el servidor (fase 6, servidor/procesado/): un contenedor
+  // por partido que lee el video con ffmpeg, busca las jugadas y hace la
+  // version ligera para los jugadores. Pide el plan de pago de Workers. Dentro
+  // de la UE, como el bucket: son videos de jugadores, a menudo menores.
+  "containers": [
+    {
+      "class_name": "Procesador",
+      "image": "./contenedor/Dockerfile",
+      "image_build_context": ".",
+      // 4 vCPU: decodificar un 4K de dos horas es lo caro.
+      "instance_type": "standard-4",
+      "max_instances": 5,
+      "constraints": { "jurisdiction": "eu" }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "PROCESADOR", "class_name": "Procesador" }]
+  },
+  "exports": {
+    "Procesador": { "type": "durable-object", "storage": "sqlite" }
+  },
+  // En local no se arrancan contenedores (hace falta Docker y la imagen):
+  // npm run dev y las pruebas funcionan sin ellos. Para probar el procesado en
+  // local, ponlo a true.
+  "dev": {
+    "enable_containers": false
+  },
   // La limpieza (servidor/limpieza.ts): sesiones caducadas y partidos que
   // pasan la retencion de su plan. Cada hora, por lotes.
   "triggers": {
@@ -47,7 +74,10 @@
     "ACCESS_AUD": "",
     // Cada parte de la subida: 50 MiB. R2 pide al menos 5 MiB (salvo la
     // ultima) y el Worker no admite cuerpos de mas de 100 MB.
-    "TAMANO_PARTE_BYTES": 52428800
+    "TAMANO_PARTE_BYTES": 52428800,
+    // "no" apaga el procesado en el servidor sin quitar la configuracion: los
+    // partidos se analizan solo en el navegador y no hay version ligera.
+    "PROCESADO_SERVIDOR": "si"
   },
   "observability": {
     "enabled": true

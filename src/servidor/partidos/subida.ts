@@ -1,7 +1,9 @@
 import { numeroPartes, partesQueFaltan, rangoParte } from '../../comun/partesSubida';
 import { partidoDe, type Contexto } from '../contexto';
+import { procesarAlSubir } from '../procesado/api';
+import type { Lanzador } from '../procesado/lanzar';
 import { FalloApi, json } from '../respuestas';
-import type { Parametros } from '../rutas';
+import type { Manejador, Parametros } from '../rutas';
 import { aPartido, claves, guardarParte, marcarSubido, partesSubidas } from './almacen';
 
 /**
@@ -39,7 +41,7 @@ async function recibirParte(peticion: Request, { id, numero }: Parametros, ctx: 
   return json({ numero: n, etag: parte.etag });
 }
 
-export async function completar(_peticion: Request, { id }: Parametros, ctx: Contexto): Promise<Response> {
+async function completar(_peticion: Request, { id }: Parametros, ctx: Contexto, lanzar: Lanzador): Promise<Response> {
   const { env } = ctx;
   const fila = await partidoDe(ctx, id);
   if (fila.estado === 'subido') return json(aPartido(fila, []));
@@ -59,5 +61,11 @@ export async function completar(_peticion: Request, { id }: Parametros, ctx: Con
   if (objeto.size !== fila.tamano) throw new Error(`El video ${id} ha quedado con ${objeto.size} bytes y no ${fila.tamano}`);
   const ahora = new Date().toISOString();
   await marcarSubido(env.BD, id, ahora);
+  // El video ya esta entero: el servidor puede buscar las jugadas y hacer la version ligera.
+  await procesarAlSubir(ctx, id, lanzar);
   return json(aPartido({ ...fila, estado: 'subido', subida_id: null, subida_creada: null, actualizado: ahora }, []));
+}
+
+export function crearCompletar(lanzar: Lanzador): Manejador<Contexto> {
+  return (peticion, parametros, ctx) => completar(peticion, parametros, ctx, lanzar);
 }

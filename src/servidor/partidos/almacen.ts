@@ -1,6 +1,8 @@
 import { bytesSubidos } from '../../comun/partesSubida';
 import type { EstadoPartido, NuevoPartido, Partido } from '../../comun/partido';
 import { fechaDeBorrado, plan, type Uso } from '../../comun/planes';
+import type { EstadoProcesado, FaseTrabajo, Procesado } from '../../comun/procesado';
+import { aProcesado } from '../procesado/almacen';
 
 /**
  * Los partidos en D1. Toda consulta de un partido lleva el dueno en el WHERE:
@@ -29,10 +31,24 @@ export interface FilaPartido {
   /** Del dueno (LEFT JOIN usuarios): de ahi sale cuando se borra. Null si aun no tiene fila. */
   plan: string | null;
   plan_desde: string | null;
+  /** Del procesado en el servidor (LEFT JOIN procesados); null si nunca se ha procesado alli. */
+  pr_estado: EstadoProcesado | null;
+  pr_fase: FaseTrabajo | null;
+  pr_avance: number | null;
+  pr_mensaje: string | null;
+  pr_ligero_tamano: number | null;
+  pr_actualizado: string | null;
 }
 
-/** Cada partido con el plan de su dueno. */
-const CON_PLAN = 'SELECT p.*, u.plan AS plan, u.plan_desde AS plan_desde FROM partidos p LEFT JOIN usuarios u ON u.email = p.dueno';
+/** Cada partido con el plan de su dueno y su procesado en el servidor. */
+const CON_PLAN = `SELECT p.*, u.plan AS plan, u.plan_desde AS plan_desde, pr.estado AS pr_estado, pr.fase AS pr_fase,
+    pr.avance AS pr_avance, pr.mensaje AS pr_mensaje, pr.ligero_tamano AS pr_ligero_tamano, pr.actualizado AS pr_actualizado
+  FROM partidos p LEFT JOIN usuarios u ON u.email = p.dueno LEFT JOIN procesados pr ON pr.partido = p.id`;
+
+function procesadoDe(f: FilaPartido): Procesado | null {
+  if (f.pr_estado === null || f.pr_actualizado === null) return null;
+  return aProcesado({ estado: f.pr_estado, fase: f.pr_fase, avance: f.pr_avance ?? 0, mensaje: f.pr_mensaje, ligero_tamano: f.pr_ligero_tamano, actualizado: f.pr_actualizado });
+}
 
 export interface ParteSubida {
   numero: number;
@@ -44,6 +60,8 @@ export const claves = {
   edicion: (id: string) => `partidos/${id}/edicion.json`,
   senales: (id: string) => `partidos/${id}/senales.json`,
   detecciones: (id: string) => `partidos/${id}/detecciones.json`,
+  /** La version a 720p que hace el contenedor para los jugadores (fase 6). */
+  ligero: (id: string) => `partidos/${id}/ligero.mp4`,
 };
 
 export function aPartido(f: FilaPartido, partes: readonly number[]): Partido {
@@ -61,6 +79,7 @@ export function aPartido(f: FilaPartido, partes: readonly number[]): Partido {
     fragmentos: f.fragmentos,
     creado: f.creado,
     seBorra: fechaDeBorrado(f.creado, f.plan_desde, plan(f.plan)),
+    servidor: procesadoDe(f),
   };
 }
 

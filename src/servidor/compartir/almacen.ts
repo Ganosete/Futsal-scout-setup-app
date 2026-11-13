@@ -9,7 +9,10 @@ export interface FilaEnlace extends Enlace {
 
 /** El enlace con lo que hace falta de su partido para ensenarlo, sin nada del entrenador. */
 export type EnlaceConPartido = Pick<FilaEnlace, 'token' | 'caduca'> &
-  Pick<FilaPartido, 'id' | 'local' | 'visitante' | 'fecha' | 'duracion' | 'tamano' | 'tipo' | 'estado'>;
+  Pick<FilaPartido, 'id' | 'local' | 'visitante' | 'fecha' | 'duracion' | 'tamano' | 'tipo' | 'estado'> & {
+    /** Los bytes de la version ligera, si ya la hay (fase 6). */
+    ligero_tamano: number | null;
+  };
 
 export function aEnlace(f: FilaEnlace): Enlace {
   return { token: f.token, creado: f.creado, caduca: f.caduca, vistas: f.vistas };
@@ -34,8 +37,8 @@ export async function quitarEnlace(bd: D1Database, partido: string, token: strin
 export async function leerEnlace(bd: D1Database, token: string): Promise<EnlaceConPartido | null> {
   return bd
     .prepare(
-      `SELECT e.token, e.caduca, p.id, p.local, p.visitante, p.fecha, p.duracion, p.tamano, p.tipo, p.estado
-       FROM enlaces e JOIN partidos p ON p.id = e.partido WHERE e.token = ?`,
+      `SELECT e.token, e.caduca, p.id, p.local, p.visitante, p.fecha, p.duracion, p.tamano, p.tipo, p.estado, pr.ligero_tamano
+       FROM enlaces e JOIN partidos p ON p.id = e.partido LEFT JOIN procesados pr ON pr.partido = p.id WHERE e.token = ?`,
     )
     .bind(token)
     .first<EnlaceConPartido>();
