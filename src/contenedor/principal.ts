@@ -69,3 +69,13 @@ const servidor = createServer((req, res) => {
 });
 
 servidor.listen(PUERTO, () => console.log(`Escuchando en el puerto ${PUERTO}`));
+
+// Como primer proceso del contenedor, Node no trae los manejadores de senal de siempre: sin esto,
+// un SIGTERM (docker stop, o la plataforma parandolo con aviso) se ignora hasta el SIGKILL.
+// Lo que estuviera a medias se pierde igual; el Durable Object lo vuelve a pedir si hace falta.
+for (const senal of ['SIGTERM', 'SIGINT'] as const) {
+  process.on(senal, () => {
+    servidor.close();
+    process.exit(0);
+  });
+}
