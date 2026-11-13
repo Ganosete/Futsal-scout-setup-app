@@ -38,8 +38,14 @@ jobs:
       - name: ffmpeg
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
 
+      - name: Programa del contenedor
+        run: npm run contenedor:compilar
+
       - name: Pruebas unitarias
         run: npm test
+        env:
+          # Con esto se prueba tambien el programa compilado del contenedor.
+          CONTENEDOR_PROGRAMA: dist/contenedor/principal.mjs
 
       - name: Navegador para Playwright
         run: npx playwright install --with-deps chromium
@@ -54,3 +60,35 @@ jobs:
           name: informe-playwright
           path: playwright-report/
           retention-days: 7
+
+  contenedor:
+    # La imagen de contenedor/Dockerfile, construida y probada de verdad: el
+    # programa compilado con el ffmpeg de Debian, contra una pasarela de mentira.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - run: npm ci
+
+      # Solo para mirar con ffprobe lo que sale del contenedor.
+      - name: ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Programa del contenedor
+        run: npm run contenedor:compilar
+
+      - name: Imagen
+        run: docker build -f contenedor/Dockerfile -t futsal-procesador .
+
+      - name: Prueba de la imagen
+        run: npx vitest run --project node tests/contenedor/programa.test.ts
+        env:
+          CONTENEDOR_IMAGEN: futsal-procesador

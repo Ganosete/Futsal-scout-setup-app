@@ -23,7 +23,7 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true
   },
-  "include": ["tests", "e2e", "src/comun", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"],
+  "include": ["tests", "e2e", "src/comun", "vite.config.ts", "vite.contenedor.config.ts", "vitest.config.ts", "playwright.config.ts"],
   // Las del Worker tienen su propio entorno: tsconfig.pruebas-servidor.json.
   "exclude": ["tests/servidor"]
 }
