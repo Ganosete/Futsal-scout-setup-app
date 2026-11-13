@@ -13,6 +13,17 @@ import { proponerPartes, type Parte } from './partes';
  * volver a leer el video.
  */
 
+/** Como en futsal-tracking: 5 fotogramas por segundo bastan para ver cuando se para y se arranca. */
+export const FPS_ANALISIS = 5;
+
+/**
+ * La imagen en la que se mide la actividad: diminuta, porque el movimiento de
+ * conjunto se ve igual y leerla no cuesta nada. El navegador y el servidor
+ * tienen que medir sobre la misma, o la mediana con la que se comparan los
+ * umbrales cambiaria.
+ */
+export const IMAGEN_ANALISIS = { ancho: 96, alto: 54 } as const;
+
 export interface SenalesAnalisis {
   duracion: number;
   /** Null: no se ha podido escuchar el audio (no tiene, o el navegador no sabe leerlo). */

@@ -1,6 +1,7 @@
 import { AudioSampleSink, VideoSampleSink, type AudioSample, type Input } from 'mediabunny';
 import { actividad, type MuestraActividad } from '../../nucleo/balonParado/movimiento';
 import { DetectorPitidos, type Pitido } from '../../nucleo/balonParado/pitidos';
+import { IMAGEN_ANALISIS } from '../../nucleo/analizar';
 import { aGris, type PlanoGris } from '../../nucleo/gris';
 import { instantesDeMuestreo, silencioParaHueco } from './muestreo';
 
@@ -65,9 +66,7 @@ export async function escucharAudio(entrada: Input, duracion: number, ctl: Contr
   return { pitidos, aviso: null };
 }
 
-/** Imagen diminuta: el movimiento de conjunto se ve igual y leerla no cuesta nada. */
-const ANCHO = 96;
-const ALTO = 54;
+const { ancho: ANCHO, alto: ALTO } = IMAGEN_ANALISIS;
 
 export async function medirImagen(entrada: Input, duracion: number, fps: number, ctl: ControlLectura): Promise<MuestraActividad[]> {
   const pista = await entrada.getPrimaryVideoTrack();

@@ -13,7 +13,8 @@ import { crearBloqueRitmo } from '../ritmo/bloqueRitmo';
 import { huellaFichero } from '../subida/huella';
 import { Barra } from './barra';
 import { crearCompartir } from './compartir';
-import { compactarSenales, edicionDeAnalisis, edicionDeEstado, estadoDeEdicion } from './conversion';
+import { compactarSenales, edicionDeAnalisis } from '../../comun/guardadoAnalisis';
+import { edicionDeEstado, estadoDeEdicion } from './conversion';
 import { subirVideo, type SubidaVideo } from './subidaVideo';
 import { fechaPartido, tituloPartido } from './textos';
 

@@ -16,5 +16,4 @@ export type RespuestaAnalisis =
     }
   | { tipo: 'error'; mensaje: string };
 
-/** Como en futsal-tracking: 5 fotogramas por segundo bastan para ver cuando se para y se arranca. */
-export const FPS_ANALISIS = 5;
+export { FPS_ANALISIS } from '../../nucleo/analizar';

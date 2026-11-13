@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { compactarSenales, edicionDeAnalisis, edicionDeEstado, estadoDeEdicion } from '../src/cliente/partido/conversion';
+import { edicionDeEstado, estadoDeEdicion } from '../src/cliente/partido/conversion';
+import { compactarSenales, edicionDeAnalisis } from '../src/comun/guardadoAnalisis';
 import { leerEdicion } from '../src/comun/edicion';
 import type { ResultadoAnalisis } from '../src/nucleo/analizar';
 
