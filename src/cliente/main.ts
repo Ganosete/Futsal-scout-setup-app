@@ -22,6 +22,7 @@ el('version').textContent = __VERSION__;
 
 let formulario: Formulario | null = null;
 let quien: string | null = null;
+let conServidor = false;
 
 /**
  * El estado de la sesion va en <body data-sesion>: «no» deja ver solo la
@@ -31,6 +32,9 @@ let quien: string | null = null;
 function conCuenta(c: Cuenta): void {
   document.body.dataset.sesion = 'si';
   quien = c.email;
+  // Con el procesado en el servidor, se puede subir y cerrar la pagina (fase 6).
+  conServidor = c.servidor;
+  el('casilla-servidor').hidden = !c.servidor;
   cabecera.pintar(c);
   miCuenta.pintar(c);
 }
@@ -91,6 +95,7 @@ const misPartidos = iniciarMisPartidos({
     void panel.abrir(p);
     el('bloque-analisis').scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
+  puedeServidor: () => conServidor,
   alBorrar: (id) => {
     panel.cerrarSiEs(id);
     if (quien) void api.verCuenta().then(conCuenta, () => undefined);
@@ -98,7 +103,7 @@ const misPartidos = iniciarMisPartidos({
 });
 
 formulario = iniciarFormulario({
-  alEnviar: (video, datos) => void panel.subirYAnalizar(video, datos),
+  alEnviar: (video, datos) => void panel.subirYAnalizar(video, datos, conServidor && el<HTMLInputElement>('analizar-en-servidor').checked),
 });
 
 async function arrancar(): Promise<void> {

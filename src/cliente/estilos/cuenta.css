@@ -280,8 +280,9 @@ body[data-sesion='no'] .contenido > :not(#bloque-entrar) {
   gap: 10px;
 }
 
-/* «Mis partidos»: cuando se borra cada uno. */
-.partido-borrado {
+/* «Mis partidos»: cuando se borra cada uno y en que va en el servidor. */
+.partido-borrado,
+.partido-servidor {
   margin: 2px 0 0;
   color: var(--texto-suave);
   font-size: 0.85rem;

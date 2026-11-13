@@ -1,7 +1,7 @@
 import type { Partido } from '../../comun/partido';
 import { api, ErrorApi } from '../api/api';
 import { crear, el } from '../dom';
-import { detallePartido, sePuedeAbrir, textoBorrado, tituloPartido } from './textos';
+import { botonServidor, detallePartido, sePuedeAbrir, textoBorrado, textoServidor, tituloPartido, trabajaEnServidor } from './textos';
 
 /**
  * «Mis partidos»: los partidos subidos, para volver a abrirlos o borrarlos.
@@ -12,7 +12,12 @@ import { detallePartido, sePuedeAbrir, textoBorrado, tituloPartido } from './tex
 export interface OpcionesMisPartidos {
   abrir: (p: Partido) => void;
   alBorrar: (id: string) => void;
+  /** Si la cuenta puede pedir el procesado en el servidor (su plan, y la web lo tiene). */
+  puedeServidor: () => boolean;
 }
+
+/** Mientras el servidor trabaja en algun partido, la lista se pide otra vez cada tanto. */
+const REFRESCO_MS = 10_000;
 
 export interface MisPartidos {
   recargar: () => Promise<Partido[]>;
@@ -45,6 +50,8 @@ export function iniciarMisPartidos(o: OpcionesMisPartidos): MisPartidos {
         datos.append(crear('p', 'partido-titulo', tituloPartido(p)), crear('p', 'partido-detalle', detallePartido(p)));
         const borrado = textoBorrado(p.seBorra);
         if (borrado) datos.append(crear('p', 'partido-borrado', borrado));
+        const servidor = textoServidor(p.servidor);
+        if (servidor) datos.append(crear('p', 'partido-servidor', servidor));
         const acciones = crear('div', 'partido-acciones');
         const nombre = tituloPartido(p);
         if (sePuedeAbrir(p)) {
@@ -55,6 +62,14 @@ export function iniciarMisPartidos(o: OpcionesMisPartidos): MisPartidos {
           abrir.disabled = ocupado;
           if (ocupado) abrir.title = 'Espera a que acabe la subida en marcha, o párala, para abrir otro partido.';
           acciones.append(abrir);
+        }
+        const pedir = o.puedeServidor() ? botonServidor(p) : null;
+        if (pedir) {
+          const servidor = crear('button', 'boton-mini', pedir);
+          servidor.type = 'button';
+          servidor.dataset.accion = 'servidor';
+          servidor.setAttribute('aria-label', `${pedir}: ${nombre}`);
+          acciones.append(servidor);
         }
         const borrar = crear('button', 'boton-mini', 'Borrar');
         borrar.type = 'button';
@@ -67,8 +82,12 @@ export function iniciarMisPartidos(o: OpcionesMisPartidos): MisPartidos {
     );
   }
 
+  let refresco: ReturnType<typeof setTimeout> | null = null;
+
   async function recargar(): Promise<Partido[]> {
     const mio = ++turno;
+    if (refresco) clearTimeout(refresco);
+    refresco = null;
     try {
       const nuevos = await api.listarPartidos();
       if (mio !== turno) return partidos;
@@ -82,7 +101,19 @@ export function iniciarMisPartidos(o: OpcionesMisPartidos): MisPartidos {
     }
     pintar();
     if (estado.textContent) bloque.hidden = false;
+    if (partidos.some(trabajaEnServidor)) refresco = setTimeout(() => void recargar(), REFRESCO_MS);
     return partidos;
+  }
+
+  async function procesar(p: Partido): Promise<void> {
+    try {
+      await api.procesar(p.id);
+    } catch (e) {
+      estado.textContent = `No se ha podido pedir al servidor: ${e instanceof Error ? e.message : ''}`;
+      return;
+    }
+    await recargar();
+    estado.textContent = `${tituloPartido(p)}: pedido al servidor.`;
   }
 
   async function borrar(p: Partido): Promise<void> {
@@ -103,6 +134,7 @@ export function iniciarMisPartidos(o: OpcionesMisPartidos): MisPartidos {
     const p = partidos.find((x) => x.id === boton?.closest<HTMLElement>('.partido')?.dataset.id);
     if (!boton || !p) return;
     if (boton.dataset.accion === 'abrir') o.abrir(p);
+    else if (boton.dataset.accion === 'servidor') void procesar(p);
     else void borrar(p);
   });
 

@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { detalleEnlace, detallePartido, fechaPartido, sePuedeAbrir, textoBorrado, textoSubida, tituloPartido, urlEnlace } from '../src/cliente/partido/textos';
+import {
+  botonServidor,
+  detalleEnlace,
+  detallePartido,
+  fechaPartido,
+  sePuedeAbrir,
+  textoBorrado,
+  textoGuardado,
+  textoServidor,
+  textoSubida,
+  tituloPartido,
+  trabajaEnServidor,
+  urlEnlace,
+} from '../src/cliente/partido/textos';
+import type { Procesado } from '../src/comun/procesado';
 import type { Partido } from '../src/comun/partido';
 
 const P: Partido = {
@@ -78,5 +92,40 @@ describe('textos de los enlaces', () => {
   it('sin caducidad, o ya caducado', () => {
     expect(detalleEnlace({ ...ENLACE, caduca: null, vistas: 0 }, AHORA)).toBe('No caduca · 0 vistas');
     expect(detalleEnlace(ENLACE, new Date('2026-12-11T00:00:00.000Z'))).toBe('Ha caducado: ya no funciona · 3 vistas');
+  });
+});
+
+describe('el procesado en el servidor, en «Mis partidos»', () => {
+  const S: Procesado = { estado: 'trabajando', fase: 'leyendo', avance: 0.4, mensaje: null, ligero: false, actualizado: '2026-11-13T10:00:00.000Z' };
+
+  it('en que va: esperando, buscando, guardando o preparando lo de los jugadores', () => {
+    expect(textoServidor(null)).toBeNull();
+    expect(textoServidor({ ...S, estado: 'esperando', fase: null, avance: 0 })).toBe('En el servidor: esperando turno.');
+    expect(textoServidor(S)).toBe('En el servidor: buscando las jugadas (40\u00a0%).');
+    expect(textoServidor({ ...S, fase: 'guardando' })).toBe('En el servidor: guardando las jugadas.');
+    expect(textoServidor({ ...S, fase: 'subiendo', avance: 0.6 })).toBe('En el servidor: preparando el vídeo para los jugadores (60\u00a0%).');
+  });
+
+  it('al acabar: los avisos del analisis, o que ya hay version ligera; un fallo dice el suyo', () => {
+    const hecho: Procesado = { ...S, estado: 'hecho', fase: null, avance: 1 };
+    expect(textoServidor({ ...hecho, mensaje: 'El vídeo no tiene sonido: se ha buscado sin el silbato.' })).toBe(
+      'Procesado en el servidor. El vídeo no tiene sonido: se ha buscado sin el silbato.',
+    );
+    expect(textoServidor({ ...hecho, ligero: true })).toBe('Los jugadores ven la versión ligera (720p).');
+    expect(textoServidor(hecho)).toBeNull();
+    expect(textoServidor({ ...S, estado: 'fallo', mensaje: 'No se ha podido procesar el vídeo en el servidor.' })).toBe('No se ha podido procesar el vídeo en el servidor.');
+  });
+
+  it('el boton: si nunca se ha procesado alli, o si fallo; y la lista se refresca mientras trabaja', () => {
+    expect(botonServidor({ estado: 'subiendo', servidor: null })).toBeNull();
+    expect(botonServidor({ estado: 'subido', servidor: null })).toBe('Procesar en el servidor');
+    expect(botonServidor({ estado: 'subido', servidor: { ...S, estado: 'fallo' } })).toBe('Reintentar en el servidor');
+    expect(botonServidor({ estado: 'subido', servidor: S })).toBeNull();
+    expect([S, { ...S, estado: 'esperando' as const }, { ...S, estado: 'hecho' as const }, null].map((x) => trabajaEnServidor({ servidor: x }))).toEqual([true, true, false, false]);
+  });
+
+  it('lo que se dice bajo el editor al guardar', () => {
+    expect(textoGuardado({ tipo: 'guardado' })).toBe('Cambios guardados.');
+    expect(textoGuardado({ tipo: 'parado', mensaje: 'otra pestaña' })).toBe('Los cambios ya no se guardan: otra pestaña');
   });
 });

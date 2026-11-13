@@ -36,6 +36,11 @@ export const api = {
 
   completar: async (id: string): Promise<Partido> => (await pedir('POST', `${partido(id)}/completar`)).json(),
 
+  /** Que lo procese el servidor (fase 6): buscar las jugadas si no las hay y la version ligera. */
+  procesar: async (id: string): Promise<void> => {
+    await pedir('POST', `${partido(id)}/procesar`);
+  },
+
   borrar: async (id: string): Promise<void> => {
     await pedir('DELETE', partido(id));
   },

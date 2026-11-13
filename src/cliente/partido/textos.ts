@@ -1,6 +1,8 @@
 import { haCaducado, type Enlace } from '../../comun/compartido';
 import { formatearDuracion, formatearTamano } from '../../comun/formato';
 import type { Partido } from '../../comun/partido';
+import type { Procesado } from '../../comun/procesado';
+import type { EstadoGuardado } from '../editor/guardado';
 
 /** Los textos de «Mis partidos» y de la subida. Puros: se prueban sin navegador. */
 
@@ -42,6 +44,35 @@ export function textoBorrado(seBorra: string | null, zonaHoraria?: string): stri
   return `Se borra el ${dia.format(new Date(seBorra))}`;
 }
 
+const ENTERO_PORCENTAJE = new Intl.NumberFormat('es-ES', { style: 'percent', maximumFractionDigits: 0 });
+
+/** Si el servidor esta con el (esperando o trabajando): mientras, la lista se refresca sola. */
+export function trabajaEnServidor(p: Pick<Partido, 'servidor'>): boolean {
+  return p.servidor?.estado === 'esperando' || p.servidor?.estado === 'trabajando';
+}
+
+/** En que va en el servidor, para la fila de «Mis partidos»; null si no hay nada que contar. */
+export function textoServidor(s: Procesado | null): string | null {
+  if (!s) return null;
+  const pct = ENTERO_PORCENTAJE.format(s.avance);
+  if (s.estado === 'esperando') return 'En el servidor: esperando turno.';
+  if (s.estado === 'trabajando') {
+    if (s.fase === 'guardando') return 'En el servidor: guardando las jugadas.';
+    if (s.fase === 'subiendo') return `En el servidor: preparando el vídeo para los jugadores (${pct}).`;
+    return `En el servidor: buscando las jugadas (${pct}).`;
+  }
+  if (s.estado === 'fallo') return s.mensaje ?? 'El servidor no ha podido procesarlo.';
+  if (s.mensaje) return `Procesado en el servidor. ${s.mensaje}`;
+  return s.ligero ? 'Los jugadores ven la versión ligera (720p).' : null;
+}
+
+/** El boton para pedirlo al servidor: si nunca se ha procesado alli, o si fallo. Null si no toca. */
+export function botonServidor(p: Pick<Partido, 'estado' | 'servidor'>): string | null {
+  if (p.estado !== 'subido') return null;
+  if (p.servidor === null) return 'Procesar en el servidor';
+  return p.servidor.estado === 'fallo' ? 'Reintentar en el servidor' : null;
+}
+
 /** La direccion que se manda a los jugadores. */
 export function urlEnlace(origen: string, token: string): string {
   return `${origen}/v/${token}`;
@@ -54,4 +85,12 @@ export function detalleEnlace(e: Enlace, ahora: Date, zonaHoraria?: string): str
   if (haCaducado(e, ahora)) return `Ha caducado: ya no funciona · ${vistas}`;
   const dia = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: zonaHoraria });
   return `Caduca el ${dia.format(new Date(e.caduca))} · ${vistas}`;
+}
+
+/** Lo que se dice bajo el editor mientras se guardan los cambios. */
+export function textoGuardado(e: EstadoGuardado): string {
+  if (e.tipo === 'guardado') return 'Cambios guardados.';
+  if (e.tipo === 'reintentando') return `No se han podido guardar los cambios (${e.mensaje}): se vuelve a intentar en unos segundos.`;
+  if (e.tipo === 'parado') return `Los cambios ya no se guardan: ${e.mensaje}`;
+  return 'Guardando…';
 }

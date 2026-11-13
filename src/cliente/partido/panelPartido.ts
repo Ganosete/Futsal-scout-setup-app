@@ -7,7 +7,7 @@ import type { DatosNombre } from '../descarga/nombre';
 import { el } from '../dom';
 import { crearEditor } from '../editor/editor';
 import { crearPanelEquipos } from '../equipos/panelEquipos';
-import { Guardado, type EstadoGuardado } from '../editor/guardado';
+import { Guardado } from '../editor/guardado';
 import { crearPanelPista } from '../pista/panelPista';
 import { crearBloqueRitmo } from '../ritmo/bloqueRitmo';
 import { huellaFichero } from '../subida/huella';
@@ -16,7 +16,7 @@ import { crearCompartir } from './compartir';
 import { compactarSenales, edicionDeAnalisis } from '../../comun/guardadoAnalisis';
 import { edicionDeEstado, estadoDeEdicion } from './conversion';
 import { subirVideo, type SubidaVideo } from './subidaVideo';
-import { fechaPartido, tituloPartido } from './textos';
+import { fechaPartido, textoGuardado, tituloPartido } from './textos';
 
 /**
  * La seccion «Jugadas» de un partido: la subida y el analisis a la vez, y el
@@ -33,7 +33,8 @@ export interface VideoElegido {
 }
 
 export interface PanelPartido {
-  subirYAnalizar: (video: VideoElegido, datos: DatosPartido) => Promise<void>;
+  /** Con `enServidor`, las jugadas las busca el servidor al acabar de subir (fase 6). */
+  subirYAnalizar: (video: VideoElegido, datos: DatosPartido, enServidor?: boolean) => Promise<void>;
   abrir: (p: Partido) => Promise<void>;
   /** Si el partido abierto es ese, se cierra (se ha borrado). */
   cerrarSiEs: (id: string) => void;
@@ -53,12 +54,6 @@ export interface OpcionesPanel {
 
 const SEGUNDOS = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 1 });
 
-function textoGuardado(e: EstadoGuardado): string {
-  if (e.tipo === 'guardado') return 'Cambios guardados.';
-  if (e.tipo === 'reintentando') return `No se han podido guardar los cambios (${e.mensaje}): se vuelve a intentar en unos segundos.`;
-  if (e.tipo === 'parado') return `Los cambios ya no se guardan: ${e.mensaje}`;
-  return 'Guardando…';
-}
 
 export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
   const bloque = el<HTMLElement>('bloque-analisis');
@@ -214,7 +209,7 @@ export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
     }
   }
 
-  async function subirYAnalizar(video: VideoElegido, datos: DatosPartido): Promise<void> {
+  async function subirYAnalizar(video: VideoElegido, datos: DatosPartido, enServidor = false): Promise<void> {
     const mio = empezar(datos);
     await vaciando;
     if (mio !== turno) return;
@@ -249,6 +244,11 @@ export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
         }
         if (cambio) o.alCambiarPartidos();
       });
+    }
+    // Si ya tenia jugadas (se reanuda una subida), se abren: no hay nada que esperar del servidor.
+    if (enServidor && p && !p.partido.editado) {
+      estadoAnalisis.textContent = 'Las jugadas las buscará el servidor en cuanto acabe de subir: cuando diga «Vídeo subido.» puedes cerrar la página. Las verás en «Mis partidos».';
+      return finSubida;
     }
     await Promise.all([finSubida, buscarJugadas(video, datos, p, mio)]);
   }
