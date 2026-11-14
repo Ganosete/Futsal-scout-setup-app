@@ -5,7 +5,7 @@ import { FPS_ANALISIS, IMAGEN_ANALISIS, type SenalesAnalisis } from '../nucleo/a
 import { actividad, type MuestraActividad } from '../nucleo/balonParado/movimiento';
 import { DetectorPitidos, type Pitido } from '../nucleo/balonParado/pitidos';
 import { aGris, type PlanoGris } from '../nucleo/gris';
-import { aMuestras, argumentosPasada, BYTES_FOTOGRAMA, leerSondeo, segundosDeProgreso, Troceador, type Sondeo } from './ffmpeg';
+import { aMuestras, argumentosPasada, BYTES_FOTOGRAMA, leerSondeo, segundosDeProgreso, Troceador, ultimasLineas, type Sondeo } from './ffmpeg';
 
 /**
  * El analisis en el servidor: lo mismo que hace el navegador mientras sube
@@ -71,11 +71,6 @@ async function medir(flujo: Readable): Promise<MuestraActividad[]> {
   return serie;
 }
 
-/** Las ultimas lineas de lo que ffmpeg cuenta por la salida de errores, para el registro. */
-function cola(texto: string): string {
-  return texto.trim().split('\n').slice(-5).join(' | ');
-}
-
 export async function pasada(fuente: string, sondeo: Sondeo, o: OpcionesPasada): Promise<ResultadoPasada> {
   const { detector, aviso } = prepararEscucha(sondeo);
   const proceso = spawn('ffmpeg', argumentosPasada(fuente, { audio: detector !== null, ligero: o.ligero }), {
@@ -111,7 +106,7 @@ export async function pasada(fuente: string, sondeo: Sondeo, o: OpcionesPasada):
       fin,
     ]);
     if (o.senal?.aborted) throw new Error('Parado.');
-    if (codigo !== 0) throw new Error(`ffmpeg ha acabado con el código ${codigo}: ${cola(errores)}`);
+    if (codigo !== 0) throw new Error(`ffmpeg ha acabado con el código ${codigo}: ${ultimasLineas(errores)}`);
     return { senales: { duracion: sondeo.duracion, pitidos, actividad: serie }, avisos: aviso ? [aviso] : [] };
   } finally {
     o.senal?.removeEventListener('abort', parar);
