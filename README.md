@@ -50,6 +50,9 @@ GPU. Falta medirlo todo con partidos reales. Lo que hay:
 13. **Planes:** Gratuito, Scout y Pro, cada uno con sus partidos, su almacenamiento y los días que
    se guarda cada partido. «Mi cuenta» enseña lo que usas y deja cambiar de plan, y «Mis partidos»
    dice cuándo se borra cada uno. **El pago es una maqueta:** no pide datos y no cobra nada.
+14. **Partidos grabados con Veo:** se descargan desde Veo y se suben como cualquier otro vídeo.
+   «¿Grabas con Veo?», en «Nuevo partido», lo explica y avisa de que con la cámara que sigue el
+   balón no vale marcar la pista. La web no se conecta con Veo (ver «Cómo funciona»).
 
 **Las cifras de los planes son provisionales** (`src/comun/planes.ts`, un cambio de una línea):
 
@@ -78,6 +81,8 @@ cada 2 s y aun así va despacio: en las pruebas, cada fotograma tardó 1,5 s, as
 7. «Mi selección»: marcar clips con una estrella y sacar un vídeo solo con esos para la charla.
 8. «Ritmo del partido»: gráfico de quién tiene el balón a lo largo del partido, en total y por partes.
 9. Importar el partido pegando un enlace de Veo (solo después de revisar sus condiciones de uso).
+   Revisadas: sin un acuerdo con Veo no se puede, así que los partidos de Veo se descargan de allí
+   y se suben.
 10. Altas con email y planes (gratuito, Scout y Pro), con el pago al principio como maqueta.
 
 ## Cómo funciona
@@ -100,7 +105,7 @@ Jugadores: /v/<token> → las jugadas, para verlas y descargarlas, sin cuenta
 
 - **El análisis corre en el navegador** mientras se sube el vídeo, que ya está ahí: un Worker no
   puede decodificar vídeo, y así no cuesta servidor. Cuando haga falta analizar sin el navegador
-  abierto (o importar desde Veo), irá a Cloudflare Containers con el mismo código (fase 6).
+  abierto, irá a Cloudflare Containers con el mismo código (fase 6).
 - **El corte es virtual.** Un fragmento es solo `[desde, hasta)` sobre el vídeo original: verlo es
   saltar a ese instante y corregirlo es cambiar dos números. Solo se genera un fichero cuando
   alguien descarga, y se hace sin recodificar: copiando los bytes de ese tramo y rehaciendo el
@@ -152,6 +157,13 @@ Jugadores: /v/<token> → las jugadas, para verlas y descargarlas, sin cuenta
 - **El detector** lo trae el Worker de Hugging Face, así que la página no habla con nadie más
   (la CSP solo deja conectar con el propio origen). El navegador comprueba su tamaño y su SHA-256
   y lo guarda en su caché.
+- **Veo y sus condiciones de uso** ([General Terms y User Terms](https://www.veo.com/legal/terms)
+  del 29 de mayo de 2026, revisadas el 14 de noviembre). Las grabaciones son del club o del
+  usuario, pero no dejan usar la cuenta de otro, usar el servicio de otra forma que la que ofrece
+  Veo ni hacer ingeniería inversa, y no tienen API pública: aceptan socios «on a limited basis».
+  Así que la web no entra en Veo por el entrenador, ni lee su web, ni baja vídeos de sus enlaces:
+  el partido se descarga con el botón de Veo y se sube. Una importación automática necesitaría un
+  acuerdo con Veo.
 - La detección del balón parado y la de los equipos parten de las de
   [futsal-tracking](https://github.com/Ganosete/futsal-tracking) (ver más abajo).
 
@@ -265,7 +277,7 @@ que no alcanzan para guardar las jugadas de un partido muy corregido; el plan de
 | **4. Selección y ritmo** ✅ | Estrellas y filtro de «Mi selección» · vídeo de la selección, unido sin recodificar en el navegador · gráfico del ritmo del partido, también para los jugadores | 7, 8 |
 | **5. Usuarios y planes** ✅ | Entrar con el email (código, sin contraseñas) · planes Gratuito, Scout y Pro con límites de partidos, almacenamiento y días · «Mi cuenta» con lo que se usa · cambio de plan con el pago en maqueta · limpieza de cada hora | 10 |
 | **6. Procesado en servidor** | Cloudflare Containers: análisis sin el navegador abierto, versión ligera a 720p para los jugadores | — |
-| **7. Importar desde Veo** | Solo tras revisar sus condiciones de uso | 9 |
+| **7. Partidos de Veo** ✅ | Revisadas sus condiciones de uso: sin un acuerdo con Veo no se puede importar, así que se descargan de Veo y se suben · «¿Grabas con Veo?» en «Nuevo partido» | 9 |
 
 **Lo que se espera de la detección, sin adornar:** las faltas, los goles, los tiempos muertos y el
 descanso llevan silbato o una calma larga y se cortarán bien. Muchas bandas y córners se sacan sin

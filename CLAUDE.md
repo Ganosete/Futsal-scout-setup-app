@@ -223,3 +223,9 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
 - **Los gráficos siguen la skill de dataviz** (`cliente/ritmo/`): leyenda, marcas finas, 2 px de
   superficie entre tramos, foco de teclado y tabla. Los colores de los equipos están validados
   con su script en claro y en oscuro; si se cambian esos tokens, hay que volver a pasarlo.
+- **Veo: solo descargar y subir** (fase 7). Sus condiciones (veo.com/legal/terms, del 29-05-2026)
+  dan las grabaciones al cliente, pero prohíben usar la cuenta de un tercero, usar el servicio
+  «for any purpose other than to access the Services as offered by Veo» y la ingeniería inversa, y
+  no hay API pública. Nada de iniciar sesión por el entrenador, leer su web, usar su API interna ni
+  bajar vídeos de sus enlaces: eso pide un acuerdo con Veo. Su ayuda (support.veo.com) responde
+  403 a los accesos automáticos; el enlace de «¿Grabas con Veo?» se comprobó por el buscador.
