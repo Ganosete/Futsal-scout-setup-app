@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { leerExacto, pareceOnnx, sha256Hex } from '../../src/cliente/equipos/modelo';
+import { comprobarModelo, leerExacto, pareceOnnx, sha256Hex } from '../../src/comun/descargaModelo';
 
 function cuerpo(...trozos: number[][]): ReadableStream<Uint8Array> {
   return new ReadableStream({
@@ -31,5 +31,13 @@ describe('descarga del modelo', () => {
 
   it('el SHA-256 en hexadecimal (el de «abc», de la norma FIPS 180-2)', async () => {
     expect(await sha256Hex(new TextEncoder().encode('abc').buffer)).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+  });
+
+  it('un modelo vale si parece un ONNX y su SHA-256 es el del manifiesto', async () => {
+    // SHA-256 de los bytes 08 01 02, calculado con hashlib de Python.
+    const sha256 = '58d73e78bbbd39321d9eaef99d837bcb799a44b92830d5e4f92ae3bfa21fac97';
+    await expect(comprobarModelo(new Uint8Array([8, 1, 2]).buffer, { sha256 })).resolves.toBeUndefined();
+    await expect(comprobarModelo(new Uint8Array([8, 1, 3]).buffer, { sha256 })).rejects.toThrow('no es el que debería');
+    await expect(comprobarModelo(new TextEncoder().encode('<html>').buffer, { sha256 })).rejects.toThrow('no es un modelo');
   });
 });
