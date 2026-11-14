@@ -1,0 +1,29 @@
+{
+  // Base comun y, ademas, la configuracion de las pruebas en Node y de los
+  // ficheros de configuracion. El cliente y el Worker la extienden con su propio
+  // entorno: tsconfig.cliente.json (DOM) y tsconfig.servidor.json (workerd).
+  //
+  // Mismas opciones que futsal-tracking. `noUncheckedIndexedAccess` sigue
+  // apagada a proposito: el codigo numerico que se copiara de alli indexa
+  // arrays tipados y con ella no compila sin llenarlo de comprobaciones.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true
+  },
+  "include": ["tests", "e2e", "src/comun", "vite.config.ts", "vite.contenedor.config.ts", "vitest.config.ts", "playwright.config.ts"],
+  // Las del Worker tienen su propio entorno: tsconfig.pruebas-servidor.json.
+  "exclude": ["tests/servidor"]
+}

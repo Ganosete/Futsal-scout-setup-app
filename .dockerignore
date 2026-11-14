@@ -1,0 +1,4 @@
+# La imagen del contenedor (contenedor/Dockerfile) solo necesita el programa
+# compilado: sin esto, docker mandaria node_modules entero al construirla.
+*
+!dist/contenedor/principal.mjs

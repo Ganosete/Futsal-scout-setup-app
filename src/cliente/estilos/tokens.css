@@ -1,0 +1,71 @@
+/*
+ * Colores, radios y tipografia. Todo lo demas los usa por nombre, asi que el
+ * modo oscuro es solo cambiar estos valores.
+ */
+:root {
+  color-scheme: light dark;
+
+  --fondo: #f4f5f7;
+  --superficie: #ffffff;
+  --superficie-2: #f8f9fb;
+  --texto: #151a21;
+  --texto-suave: #5a6372;
+  --borde: #dde1e7;
+  --borde-fuerte: #b9c0cb;
+
+  /* Naranja de balon: 4,6:1 sobre blanco, valido para texto y botones. */
+  --acento: #d9480f;
+  --acento-hover: #b93d0c;
+  --acento-suave: #fff1ea;
+  --sobre-acento: #ffffff;
+  --anillo-foco: rgb(217 72 15 / 0.35);
+
+  --error: #b42318;
+  --error-fondo: #fef3f2;
+  --aviso: #8a5a00;
+  --aviso-fondo: #fff8e1;
+  /* El medidor casi lleno: mas vivo que el texto de aviso y con 3:1 sobre la superficie. */
+  --medidor-aviso: #b26b00;
+
+  /* Quien ataca en cada fragmento. Mas adelante, los colores de las camisetas. */
+  --equipo-local: #d9480f;
+  --equipo-visitante: #1864ab;
+  --sin-equipo: #adb5bd;
+
+  --radio: 10px;
+  --radio-grande: 18px;
+  --sombra: 0 1px 2px rgb(16 24 40 / 0.06), 0 10px 30px rgb(16 24 40 / 0.07);
+  --fuente: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #0e1116;
+    --superficie: #161b22;
+    --superficie-2: #1b212a;
+    --texto: #e6e9ef;
+    --texto-suave: #9aa4b2;
+    --borde: #29303b;
+    --borde-fuerte: #3d4656;
+
+    --acento: #ff7a3d;
+    --acento-hover: #ff9561;
+    --acento-suave: #2a1a12;
+    --sobre-acento: #1a0d06;
+    --anillo-foco: rgb(255 122 61 / 0.4);
+
+    --error: #ff8a80;
+    --error-fondo: #2c1515;
+    --aviso: #f5c451;
+    --aviso-fondo: #2b2410;
+    --medidor-aviso: #f5c451;
+
+    /* Dentro de la banda de luminosidad del modo oscuro (OKLCH L 0,48-0,67), validado con el
+       script de dataviz contra --superficie: los de antes, mas claros, se salian. */
+    --equipo-local: #e8590c;
+    --equipo-visitante: #228be6;
+    --sin-equipo: #5c6675;
+
+    --sombra: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 30px rgb(0 0 0 / 0.35);
+  }
+}

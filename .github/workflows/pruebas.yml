@@ -1,0 +1,94 @@
+# Tipos, pruebas unitarias y pruebas de la pagina en cada push, en cualquier
+# rama. El despliegue no pasa por aqui: lo hace Workers Builds de Cloudflare
+# al llegar a main (y una version de vista previa por rama).
+name: Pruebas
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pruebas-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Acciones fijadas por commit: una etiqueta se puede mover, un commit no.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - run: npm ci
+
+      - name: Tipos
+        run: npm run typecheck
+
+      # El analisis del servidor (fase 6) se prueba con ffmpeg de verdad.
+      - name: ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Programa del contenedor
+        run: npm run contenedor:compilar
+
+      - name: Pruebas unitarias
+        run: npm test
+        env:
+          # Con esto se prueba tambien el programa compilado del contenedor.
+          CONTENEDOR_PROGRAMA: dist/contenedor/principal.mjs
+
+      - name: Navegador para Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Pruebas de la página
+        run: npm run test:e2e
+
+      - name: Informe de Playwright
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: informe-playwright
+          path: playwright-report/
+          retention-days: 7
+
+  contenedor:
+    # La imagen de contenedor/Dockerfile, construida y probada de verdad: el
+    # programa compilado con el ffmpeg de Debian, contra una pasarela de mentira.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - run: npm ci
+
+      # Solo para mirar con ffprobe lo que sale del contenedor.
+      - name: ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Programa del contenedor
+        run: npm run contenedor:compilar
+
+      - name: Imagen
+        run: docker build -f contenedor/Dockerfile -t futsal-procesador .
+
+      - name: Prueba de la imagen
+        run: npx vitest run --project node tests/contenedor/programa.test.ts
+        env:
+          CONTENEDOR_IMAGEN: futsal-procesador

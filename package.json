@@ -1,0 +1,40 @@
+{
+  "name": "futsal-scout",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Scout automatico de futbol sala: corta el partido en fragmentos de juego, se corrige a mano y se comparte con los jugadores.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run typecheck && vite build && npm run contenedor:compilar",
+    "contenedor:compilar": "vite build -c vite.contenedor.config.ts",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "tipos:worker": "wrangler types --strict-vars=false src/servidor/worker-configuration.d.ts",
+    "typecheck": "npm run tipos:worker && tsc -p tsconfig.nucleo.json && tsc -p tsconfig.contenedor.json && tsc -p tsconfig.cliente.json && tsc -p tsconfig.servidor.json && tsc -p tsconfig.pruebas-servidor.json && tsc -p tsconfig.json",
+    "deploy": "npm run build && npm run bd:remota && wrangler deploy",
+    "bd:local": "wrangler d1 migrations apply BD --local",
+    "bd:remota": "wrangler d1 migrations apply BD --remote",
+    "videos:prueba": "bash tools/crear_videos_prueba.sh"
+  },
+  "dependencies": {
+    "mediabunny": "^1.65.2",
+    "onnxruntime-web": "^1.31.1"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.68.0",
+    "@cloudflare/vitest-plugin": "^1.6.1",
+    "@playwright/test": "1.63.0",
+    "@types/node": "^22.20.5",
+    "onnxruntime-common": "1.31.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.7",
+    "vitest": "^4.1.12",
+    "wrangler": "^4.158.0"
+  }
+}

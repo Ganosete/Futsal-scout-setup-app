@@ -1,0 +1,11 @@
+{
+  // El nucleo de la deteccion: sin DOM y sin tipos de Node ni del Worker.
+  // Tiene que correr en un worker del navegador y en Node (fase 6), y este
+  // tsconfig es lo que impide que se cuele una dependencia de un entorno.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": []
+  },
+  "include": ["src/nucleo"]
+}

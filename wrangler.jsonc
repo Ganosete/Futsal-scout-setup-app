@@ -1,0 +1,87 @@
+// Un solo Worker sirve la pagina (estaticos) y la API.
+// El directorio de los estaticos no se pone aqui: lo fija @cloudflare/vite-plugin
+// al compilar.
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "futsal-scout",
+  "main": "src/servidor/indice.ts",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "binding": "ASSETS",
+    // Cualquier ruta que no sea un fichero devuelve index.html: la navegacion
+    // la lleva la propia pagina.
+    "not_found_handling": "single-page-application",
+    // Sin esto, la regla anterior se comeria tambien /api/* y devolveria
+    // index.html en vez de llegar al Worker. /v/* es lo de los jugadores (su
+    // pagina y su API); los estaticos de /v/ (recursos e icono) no pasan por
+    // el Worker.
+    "run_worker_first": ["/api/*", "/v/*", "!/v/recursos/*", "!/v/favicon.svg"]
+  },
+  // Los partidos (D1) y sus videos (R2). El bucket esta en la jurisdiccion
+  // de la UE: son videos de jugadores, a menudo menores.
+  "d1_databases": [
+    {
+      "binding": "BD",
+      "database_name": "futsal-scout",
+      "database_id": "876808ed-cd37-4c67-be3d-77b8d0e2786a",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "VIDEOS",
+      "bucket_name": "futsal-scout-videos",
+      "jurisdiction": "eu"
+    }
+  ],
+  // El procesado en el servidor (fase 6, servidor/procesado/): un contenedor
+  // por partido que lee el video con ffmpeg, busca las jugadas y hace la
+  // version ligera para los jugadores. Pide el plan de pago de Workers. Dentro
+  // de la UE, como el bucket: son videos de jugadores, a menudo menores.
+  "containers": [
+    {
+      "class_name": "Procesador",
+      "image": "./contenedor/Dockerfile",
+      "image_build_context": ".",
+      // 4 vCPU: decodificar un 4K de dos horas es lo caro.
+      "instance_type": "standard-4",
+      "max_instances": 5,
+      "constraints": { "jurisdiction": "eu" }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "PROCESADOR", "class_name": "Procesador" }]
+  },
+  "exports": {
+    "Procesador": { "type": "durable-object", "storage": "sqlite" }
+  },
+  // En local no se arrancan contenedores (hace falta Docker y la imagen):
+  // npm run dev y las pruebas funcionan sin ellos. Para probar el procesado en
+  // local, ponlo a true.
+  "dev": {
+    "enable_containers": false
+  },
+  // La limpieza (servidor/limpieza.ts): sesiones caducadas y partidos que
+  // pasan la retencion de su plan. Cada hora, por lotes.
+  "triggers": {
+    "crons": ["23 * * * *"]
+  },
+  "vars": {
+    // Cloudflare Access: el dominio del equipo (<equipo>.cloudflareaccess.com)
+    // y la etiqueta AUD de la aplicacion. No son secretos. Vacios, fuera de
+    // localhost solo se entra con el email (fase 5).
+    "ACCESS_EQUIPO": "",
+    "ACCESS_AUD": "",
+    // Cada parte de la subida: 50 MiB. R2 pide al menos 5 MiB (salvo la
+    // ultima) y el Worker no admite cuerpos de mas de 100 MB.
+    "TAMANO_PARTE_BYTES": 52428800,
+    // "no" apaga el procesado en el servidor sin quitar la configuracion: los
+    // partidos se analizan solo en el navegador y no hay version ligera.
+    "PROCESADO_SERVIDOR": "si"
+  },
+  "observability": {
+    "enabled": true
+  },
+  // Trazas de error con los nombres del codigo fuente en el panel de Cloudflare.
+  "upload_source_maps": true
+}
