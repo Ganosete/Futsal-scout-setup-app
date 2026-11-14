@@ -1,4 +1,6 @@
 import { open } from 'node:fs/promises';
+import { comprobarModelo, leerExacto } from '../comun/descargaModelo';
+import type { ManifiestoModelo } from '../comun/modelos';
 
 /**
  * Lo que el contenedor le pide al Worker: el video de un partido y donde
@@ -54,6 +56,41 @@ export class Almacen {
     if (r.status === 412) return false;
     await esperarExito(r, 'Guardar la edición');
     return true;
+  }
+
+  /** Las jugadas que tiene el partido (las del servidor, o las de antes con lo corregido); null si no tiene. */
+  async leerEdicion(): Promise<unknown> {
+    const r = await pedir(`${this.base}/edicion`, {});
+    if (r.status === 404) return null;
+    return (await esperarExito(r, 'Leer la edición')).json();
+  }
+
+  /** Si ya se busco quien ataca en este partido: en el navegador, o en un trabajo anterior. */
+  async hayDetecciones(): Promise<boolean> {
+    const r = await esperarExito(await pedir(`${this.base}/detecciones`, {}), 'Mirar las detecciones');
+    await r.body?.cancel();
+    return r.status === 200;
+  }
+
+  /** Como la edicion: si mientras tanto se busco en el navegador, mandan esas (412). Devuelve si las ha guardado. */
+  async guardarDeteccionesSiNoHay(detecciones: unknown): Promise<boolean> {
+    const r = await pedir(`${this.base}/detecciones`, { method: 'PUT', body: JSON.stringify(detecciones), headers: { 'if-none-match': '*' } });
+    if (r.status === 412) return false;
+    await esperarExito(r, 'Guardar las detecciones');
+    return true;
+  }
+
+  /**
+   * El detector, por la pasarela (que lo trae de Hugging Face), comprobado
+   * como en el navegador: tamano exacto, que sea un ONNX y su SHA-256.
+   */
+  async bajarModelo(): Promise<{ manifiesto: ManifiestoModelo; bytes: ArrayBuffer }> {
+    const manifiesto = (await (await esperarExito(await pedir(`${this.base}/modelos/detector`, {}), 'Pedir el detector')).json()) as ManifiestoModelo;
+    const r = await esperarExito(await pedir(new URL(manifiesto.url, this.base).href, {}), 'Bajar el detector');
+    if (!r.body) throw new Error('Bajar el detector: la respuesta no trae el fichero.');
+    const bytes = await leerExacto(r.body, manifiesto.tamano, () => undefined);
+    await comprobarModelo(bytes, manifiesto);
+    return { manifiesto, bytes };
   }
 
   /**

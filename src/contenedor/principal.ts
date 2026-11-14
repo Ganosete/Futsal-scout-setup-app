@@ -1,7 +1,8 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { tmpdir } from 'node:os';
+import { availableParallelism, tmpdir } from 'node:os';
 import { esTareas, type EstadoTrabajo } from '../comun/procesado';
 import { Almacen } from './almacen';
+import type { MotorOnnx } from './onnx';
 import { trabajar } from './trabajo';
 
 /**
@@ -16,6 +17,10 @@ const almacen = new Almacen(process.env.ALMACEN ?? 'http://almacen.interno');
 const carpeta = process.env.CARPETA ?? tmpdir();
 /** 50 MiB, como la subida del navegador: R2 pide al menos 5 MiB por parte, salvo la ultima. */
 const TAMANO_PARTE = Number(process.env.TAMANO_PARTE ?? 50 * 1024 * 1024);
+/** El detector usa todos los vCPU: ffmpeg decodifica en los huecos (medido: limitarlo a uno o dos hilos va mas lento). */
+const HILOS = Number(process.env.HILOS ?? availableParallelism());
+/** El nativo, que instala contenedor/Dockerfile; no va en el programa compilado. */
+const motor = (): Promise<MotorOnnx> => import('onnxruntime-node');
 
 let estado: EstadoTrabajo = { estado: 'libre' };
 let ultimoRegistro = '';
@@ -48,7 +53,7 @@ async function empezar(req: IncomingMessage, res: ServerResponse): Promise<void>
   if (!esTareas(cuerpo?.tareas)) return responder(res, 400, { error: 'Faltan las tareas.' });
   const tareas = cuerpo.tareas;
   informar({ estado: 'trabajando', fase: 'leyendo', avance: 0 });
-  trabajar({ almacen, tareas, carpeta, tamanoParte: TAMANO_PARTE, informar })
+  trabajar({ almacen, tareas, carpeta, tamanoParte: TAMANO_PARTE, motor, hilos: HILOS, informar })
     .then((resumen) => informar({ estado: 'hecho', resumen }))
     .catch((e: unknown) => {
       console.error('El trabajo ha fallado:', e);

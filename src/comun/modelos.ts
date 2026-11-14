@@ -62,11 +62,14 @@ export interface ManifiestoModelo {
   clases: ClasesDetector;
 }
 
-/** La version va en la ruta: una direccion siempre es el mismo fichero. */
-export function rutaModelo(m: Pick<ModeloDetector, 'id' | 'version' | 'archivo'>): string {
-  return `/api/modelos/${m.id}/${m.version}/${m.archivo}`;
+/**
+ * La version va en la ruta: una direccion siempre es el mismo fichero. El
+ * navegador los pide a la API; el contenedor, a su pasarela (`/modelos`).
+ */
+export function rutaModelo(m: Pick<ModeloDetector, 'id' | 'version' | 'archivo'>, base = '/api/modelos'): string {
+  return `${base}/${m.id}/${m.version}/${m.archivo}`;
 }
 
-export function manifiesto(m: ModeloDetector): ManifiestoModelo {
-  return { url: rutaModelo(m), tamano: m.tamano, sha256: m.sha256, entrada: m.entrada, clases: m.clases };
+export function manifiesto(m: ModeloDetector, base?: string): ManifiestoModelo {
+  return { url: rutaModelo(m, base), tamano: m.tamano, sha256: m.sha256, entrada: m.entrada, clases: m.clases };
 }

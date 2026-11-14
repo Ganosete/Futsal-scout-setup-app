@@ -65,7 +65,7 @@ class MemoriaFalsa implements Memoria {
   }
 }
 
-const TAREAS = { analisis: true, ligero: true };
+const TAREAS = { analisis: true, ligero: true, equipos: true };
 
 /** Un partido de verdad (la fila de procesados va atada a el) y el procesado ya empezado. */
 async function empezado(t0 = Date.now()) {
@@ -130,7 +130,10 @@ describe('vigilar', () => {
 
   it('hecho: lo apunta con los avisos del analisis, para el contenedor y se olvida', async () => {
     const e = await trabajando();
-    e.contenedor.trabajo({ estado: 'hecho', resumen: { fragmentos: 2, edicionGuardada: true, ligeroBytes: 1000, avisos: ['El vídeo no tiene sonido: se ha buscado sin el silbato.'] } });
+    e.contenedor.trabajo({
+      estado: 'hecho',
+      resumen: { fragmentos: 2, edicionGuardada: true, ligeroBytes: 1000, fotogramas: 150, deteccionesGuardadas: true, avisos: ['El vídeo no tiene sonido: se ha buscado sin el silbato.'] },
+    });
     await vigilar(e.contenedor, e.memoria, env.BD, e.t0 + 20_000);
     expect(await e.procesado()).toMatchObject({ estado: 'hecho', avance: 1, mensaje: 'El vídeo no tiene sonido: se ha buscado sin el silbato.' });
     expect(e.contenedor.paradas).toBe(1);

@@ -1,8 +1,8 @@
 /**
  * El procesado en el servidor (fase 6): lo que se dicen el Worker y el
  * contenedor, y lo que el Worker le cuenta a la pagina. Un contenedor lee el
- * video subido con ffmpeg, busca las jugadas como el navegador y hace la
- * version ligera para los jugadores.
+ * video subido con ffmpeg, busca las jugadas como el navegador, hace la
+ * version ligera para los jugadores y busca quien ataca.
  */
 
 export interface TareasProcesado {
@@ -10,9 +10,11 @@ export interface TareasProcesado {
   analisis: boolean;
   /** La version a 720p que ven y se bajan los jugadores. */
   ligero: boolean;
+  /** «Quién ataca»: el detector en los fragmentos. Solo si el partido aun no tiene detecciones. */
+  equipos: boolean;
 }
 
-export type FaseTrabajo = 'leyendo' | 'guardando' | 'subiendo';
+export type FaseTrabajo = 'leyendo' | 'guardando' | 'subiendo' | 'detectando';
 
 /** Lo que responde el contenedor a GET /trabajo. */
 export type EstadoTrabajo =
@@ -28,6 +30,10 @@ export interface ResumenTrabajo {
   edicionGuardada: boolean;
   /** Null si no se pidio la version ligera. */
   ligeroBytes: number | null;
+  /** Los fotogramas en que se ha buscado quien ataca; null si no se pidio, o si ya estaba buscado. */
+  fotogramas: number | null;
+  /** False si mientras tanto se busco en el navegador: esas detecciones se respetan. */
+  deteccionesGuardadas: boolean;
   avisos: string[];
 }
 
@@ -49,5 +55,5 @@ export interface Procesado {
 export function esTareas(x: unknown): x is TareasProcesado {
   if (typeof x !== 'object' || x === null) return false;
   const t = x as Record<string, unknown>;
-  return typeof t.analisis === 'boolean' && typeof t.ligero === 'boolean' && (t.analisis || t.ligero);
+  return typeof t.analisis === 'boolean' && typeof t.ligero === 'boolean' && typeof t.equipos === 'boolean' && (t.analisis || t.ligero || t.equipos);
 }

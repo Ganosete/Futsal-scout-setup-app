@@ -54,7 +54,7 @@ describe('POST /api/partidos/:id/procesar', () => {
     expect(pedidos).toEqual([]);
   });
 
-  it('con el Scout: 202, se pide buscar las jugadas y la version ligera, y el partido dice que espera', async () => {
+  it('con el Scout: 202, se pide buscar las jugadas, la version ligera y quien ataca, y el partido dice que espera', async () => {
     const c = cliente();
     await aPlan(c, 'scout');
     const id = await subido(c);
@@ -63,7 +63,9 @@ describe('POST /api/partidos/:id/procesar', () => {
     expect(r.status).toBe(202);
     expect(await r.json()).toMatchObject({ servidor: { estado: 'esperando', ligero: false } });
     // Al subir con el Scout ya se pidio una vez (lo pide completar); aqui, la segunda.
-    expect(pedidos.at(-1)).toEqual({ partido: id, dueno: c.dueno, tareas: { analisis: true, ligero: true } });
+    expect(pedidos.at(-1)).toEqual({ partido: id, dueno: c.dueno, tareas: { analisis: true, ligero: true, equipos: true } });
+    const fila = await env.BD.prepare('SELECT analisis, ligero, equipos FROM procesados WHERE partido = ?').bind(id).first();
+    expect(fila).toEqual({ analisis: 1, ligero: 1, equipos: 1 });
     const p = await (await c.llamar('GET', `/api/partidos/${id}`)).json<Partido>();
     expect(p.servidor).toMatchObject({ estado: 'esperando', fase: null, avance: 0 });
   });
@@ -135,7 +137,7 @@ describe('la cuenta y los jugadores', () => {
     const id = await subido(c);
     const ligero = bytes(0, 3000).reverse();
     await env.VIDEOS.put(`partidos/${id}/ligero.mp4`, ligero);
-    await empezarProcesado(env.BD, id, { analisis: false, ligero: true }, new Date().toISOString());
+    await empezarProcesado(env.BD, id, { analisis: false, ligero: true, equipos: false }, new Date().toISOString());
     await apuntarLigero(env.BD, id, ligero.length, new Date().toISOString());
     const { token } = await (await c.llamar('POST', `/api/partidos/${id}/enlaces`, { cuerpo: JSON.stringify({ dias: 7 }) })).json<{ token: string }>();
 

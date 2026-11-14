@@ -25,5 +25,5 @@ export function procesadoEncendido(env: Env): boolean {
   return env.PROCESADO_SERVIDOR !== 'no';
 }
 
-/** Lo que se pide al acabar de subir un video: las jugadas (si no las hay ya) y la version ligera. */
-export const TAREAS_AL_SUBIR: TareasProcesado = { analisis: true, ligero: true };
+/** Lo que se pide al acabar de subir un video: las jugadas y quien ataca (si no los hay ya) y la version ligera. */
+export const TAREAS_AL_SUBIR: TareasProcesado = { analisis: true, ligero: true, equipos: true };

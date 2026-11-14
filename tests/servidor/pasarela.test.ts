@@ -1,8 +1,9 @@
 import { env } from 'cloudflare:workers';
 import { describe, expect, it } from 'vitest';
 import type { Edicion } from '../../src/comun/edicion';
+import { CLASES_COCO, DETECTOR } from '../../src/comun/modelos';
 import { empezarProcesado } from '../../src/servidor/procesado/almacen';
-import { atenderPasarela } from '../../src/servidor/procesado/pasarela';
+import { atenderPasarela, crearPasarela } from '../../src/servidor/procesado/pasarela';
 import { MIB, bytes, cliente, subirEntero, type Cliente } from './ayuda';
 
 /**
@@ -22,12 +23,12 @@ const EDICION: Edicion = {
   pista: null,
 };
 
-async function subido(): Promise<{ c: Cliente; id: string; pasarela: (camino: string, init?: RequestInit) => Promise<Response> }> {
+async function subido(atender = atenderPasarela): Promise<{ c: Cliente; id: string; pasarela: (camino: string, init?: RequestInit) => Promise<Response> }> {
   const c = cliente();
   const p = await c.crear();
   await subirEntero(c, p);
   const id = p.partido.id;
-  return { c, id, pasarela: (camino, init) => atenderPasarela(new Request(`http://almacen.interno${camino}`, init), env, { partido: id, dueno: c.dueno }) };
+  return { c, id, pasarela: (camino, init) => atender(new Request(`http://almacen.interno${camino}`, init), env, { partido: id, dueno: c.dueno }) };
 }
 
 describe('la pasarela del contenedor', () => {
@@ -63,9 +64,51 @@ describe('la pasarela del contenedor', () => {
     expect(await (await c.llamar('GET', `/api/partidos/${id}`)).json()).toMatchObject({ fragmentos: 1 });
   });
 
+  it('la edicion se puede leer: la del servidor o la que ya tuviera, con lo corregido', async () => {
+    const { pasarela } = await subido();
+    // Sin jugadas todavia, un 404 (lo mismo que ve el navegador).
+    expect((await pasarela('/edicion')).status).toBe(404);
+    await pasarela('/edicion', { method: 'PUT', body: JSON.stringify(EDICION), headers: { 'if-none-match': '*' } });
+    const r = await pasarela('/edicion');
+    expect(r.status).toBe(200);
+    expect((await r.json<Edicion>()).fragmentos).toEqual(EDICION.fragmentos);
+  });
+
+  it('las detecciones solo se guardan si no hay: las del navegador mandan', async () => {
+    const { c, id, pasarela } = await subido();
+    const detecciones = (segundos: number) => JSON.stringify({ version: 1, registros: [{ segundos, balon: null, personas: [] }] });
+    expect((await pasarela('/detecciones')).status).toBe(204);
+    const guardar = (cuerpo: string) => pasarela('/detecciones', { method: 'PUT', body: cuerpo, headers: { 'if-none-match': '*' } });
+    expect((await guardar(detecciones(1))).status).toBe(204);
+    expect((await guardar(detecciones(2))).status).toBe(412);
+    expect(await (await pasarela('/detecciones')).json()).toEqual(JSON.parse(detecciones(1)));
+    // El navegador guarda siempre (sin If-None-Match): si el entrenador busca otra vez, eso vale.
+    await c.llamar('PUT', `/api/partidos/${id}/detecciones`, { cuerpo: detecciones(3) });
+    expect(await (await pasarela('/detecciones')).json()).toEqual(JSON.parse(detecciones(3)));
+  });
+
+  it('el detector: el manifiesto apunta a la pasarela y el fichero lo trae el Worker de su origen', async () => {
+    const pedidas: string[] = [];
+    const traer = (async (url: string) => {
+      pedidas.push(url);
+      return new Response('onnx', { headers: { 'content-length': String(DETECTOR.tamano) } });
+    }) as unknown as typeof fetch;
+    const { pasarela } = await subido(crearPasarela(traer));
+    const m = await (await pasarela('/modelos/detector')).json();
+    expect(m).toEqual({ url: '/modelos/rf-detr-nano-384/1/rf-detr-nano.onnx', tamano: 107_816_789, sha256: DETECTOR.sha256, entrada: 384, clases: CLASES_COCO });
+    const r = await pasarela('/modelos/rf-detr-nano-384/1/rf-detr-nano.onnx');
+    expect(r.status).toBe(200);
+    expect(r.headers.get('content-length')).toBe(String(DETECTOR.tamano));
+    expect(pedidas).toEqual([DETECTOR.origen]);
+    await r.body?.cancel();
+    // Lo que no esta en el catalogo no se pide a nadie.
+    expect((await pasarela('/modelos/rf-detr-nano-384/2/rf-detr-nano.onnx')).status).toBe(404);
+    expect(pedidas).toHaveLength(1);
+  });
+
   it('la version ligera sube por partes y queda apuntada para los jugadores', async () => {
     const { id, pasarela } = await subido();
-    await empezarProcesado(env.BD, id, { analisis: true, ligero: true }, new Date().toISOString());
+    await empezarProcesado(env.BD, id, { analisis: true, ligero: true, equipos: true }, new Date().toISOString());
     const { subida } = await (await pasarela('/ligero', { method: 'POST' })).json<{ subida: string }>();
     // R2 pide partes iguales de al menos 5 MiB, salvo la ultima.
     const partes = [];

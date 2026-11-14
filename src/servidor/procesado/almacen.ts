@@ -10,6 +10,7 @@ export interface FilaProcesado {
   mensaje: string | null;
   analisis: number;
   ligero: number;
+  equipos: number;
   ligero_tamano: number | null;
   empezado: string;
   actualizado: string;
@@ -27,12 +28,13 @@ export async function leerProcesado(bd: D1Database, partido: string): Promise<Fi
 export async function empezarProcesado(bd: D1Database, partido: string, tareas: TareasProcesado, ahora: string): Promise<void> {
   await bd
     .prepare(
-      `INSERT INTO procesados (partido, estado, fase, avance, mensaje, analisis, ligero, ligero_tamano, empezado, actualizado)
-       VALUES (?, 'esperando', NULL, 0, NULL, ?, ?, NULL, ?, ?)
+      `INSERT INTO procesados (partido, estado, fase, avance, mensaje, analisis, ligero, equipos, ligero_tamano, empezado, actualizado)
+       VALUES (?, 'esperando', NULL, 0, NULL, ?, ?, ?, NULL, ?, ?)
        ON CONFLICT (partido) DO UPDATE SET estado = 'esperando', fase = NULL, avance = 0, mensaje = NULL,
-         analisis = excluded.analisis, ligero = excluded.ligero, empezado = excluded.empezado, actualizado = excluded.actualizado`,
+         analisis = excluded.analisis, ligero = excluded.ligero, equipos = excluded.equipos,
+         empezado = excluded.empezado, actualizado = excluded.actualizado`,
     )
-    .bind(partido, tareas.analisis ? 1 : 0, tareas.ligero ? 1 : 0, ahora, ahora)
+    .bind(partido, tareas.analisis ? 1 : 0, tareas.ligero ? 1 : 0, tareas.equipos ? 1 : 0, ahora, ahora)
     .run();
 }
 

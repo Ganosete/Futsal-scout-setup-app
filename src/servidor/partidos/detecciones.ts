@@ -21,6 +21,11 @@ function sonDetecciones(x: unknown): boolean {
 
 export async function guardarDetecciones(peticion: Request, { id }: Parametros, ctx: Contexto): Promise<Response> {
   await partidoDe(ctx, id);
+  // El servidor guarda las suyas solo si no hay (If-None-Match: *): si mientras tanto se busco en el
+  // navegador, mandan esas, que son las que el entrenador ya tiene delante. El navegador siempre guarda.
+  if (peticion.headers.get('if-none-match') === '*' && (await ctx.env.VIDEOS.head(claves.detecciones(id)))) {
+    throw new FalloApi(412, 'Este partido ya tiene detecciones.');
+  }
   const texto = await leerTexto(peticion, LIMITE_DETECCIONES_BYTES);
   let valor: unknown;
   try {

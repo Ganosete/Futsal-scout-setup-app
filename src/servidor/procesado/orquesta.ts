@@ -49,7 +49,7 @@ export const PLAZOS = {
   /** Luego, cada 15 s: tambien es lo que lo mantiene despierto. */
   sondeo: 15_000,
   arranque: 3 * 60_000,
-  /** Un 4K de dos horas tarda unos 40 minutos; seis horas es que algo va mal. */
+  /** Un 4K de dos horas tarda unos 40 minutos, y quien ataca otra media hora; seis horas es que algo va mal. */
   total: 6 * 3600_000,
   /** Un minuto sin contestar (4 preguntas) es un contenedor caido. */
   sinRespuesta: 4,

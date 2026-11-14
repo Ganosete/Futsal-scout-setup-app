@@ -1,8 +1,11 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
+import { DETECTOR, manifiesto } from '../../comun/modelos';
 import type { Contexto } from '../contexto';
 import { leerJson } from '../cuerpo';
+import { crearServirModelo } from '../modelos';
 import { claves } from '../partidos/almacen';
-import { guardar, guardarSenales } from '../partidos/edicion';
+import { guardarDetecciones, leerDetecciones } from '../partidos/detecciones';
+import { guardar, guardarSenales, leer } from '../partidos/edicion';
 import { video } from '../partidos/video';
 import { FalloApi, json } from '../respuestas';
 import { crearEnrutador, type Manejador } from '../rutas';
@@ -11,9 +14,10 @@ import { apuntarLigero } from './almacen';
 /**
  * Lo que atiende las peticiones del contenedor a http://almacen.interno: el
  * Durable Object la pone delante al arrancarlo, con el partido y su dueno en
- * `props`, asi que solo da acceso a ese partido. Para el video, las senales y
- * la edicion usa los mismos manejadores que la API del entrenador: misma
- * validacion, mismas claves de R2 y la edicion solo si no hay (If-None-Match).
+ * `props`, asi que solo da acceso a ese partido. Para el video, las senales,
+ * la edicion, las detecciones y el detector usa los mismos manejadores que la
+ * API del entrenador: misma validacion, mismas claves de R2, y la edicion y
+ * las detecciones solo si no hay (If-None-Match).
  */
 
 export interface PropsPasarela {
@@ -70,19 +74,31 @@ const completarLigero: Manejador<ContextoPasarela> = async (peticion, p, { env, 
   return json({ tamano: objeto.size });
 };
 
-const enrutar = crearEnrutador<ContextoPasarela>([
-  { metodo: 'GET', patron: '/video', manejar: delPartido(video) },
-  { metodo: 'PUT', patron: '/senales', manejar: delPartido(guardarSenales) },
-  { metodo: 'PUT', patron: '/edicion', manejar: delPartido(guardar) },
-  { metodo: 'POST', patron: '/ligero', manejar: empezarLigero },
-  { metodo: 'PUT', patron: '/ligero/:subida/partes/:numero', manejar: subirParteLigero },
-  { metodo: 'POST', patron: '/ligero/:subida/completar', manejar: completarLigero },
-]);
+/** Las rutas del detector en la pasarela: el contenedor no tiene internet, y lo trae el Worker de Hugging Face. */
+export const RUTA_MODELOS = '/modelos';
 
-/** Fuera de la clase para probarla sin intercepciones: la pasarela es esto con el `env` y los `props` de cada contenedor. */
-export function atenderPasarela(peticion: Request, env: Env, props: PropsPasarela): Promise<Response> {
-  return enrutar(peticion, { env, dueno: props.dueno, sesion: false, partido: props.partido });
+export type AtenderPasarela = (peticion: Request, env: Env, props: PropsPasarela) => Promise<Response>;
+
+/** Fuera de la clase para probarla sin intercepciones; `traer` es como llega el Worker al origen del detector. */
+export function crearPasarela(traer: typeof fetch = fetch): AtenderPasarela {
+  const enrutar = crearEnrutador<ContextoPasarela>([
+    { metodo: 'GET', patron: '/video', manejar: delPartido(video) },
+    { metodo: 'PUT', patron: '/senales', manejar: delPartido(guardarSenales) },
+    { metodo: 'GET', patron: '/edicion', manejar: delPartido(leer) },
+    { metodo: 'PUT', patron: '/edicion', manejar: delPartido(guardar) },
+    { metodo: 'GET', patron: '/detecciones', manejar: delPartido(leerDetecciones) },
+    { metodo: 'PUT', patron: '/detecciones', manejar: delPartido(guardarDetecciones) },
+    { metodo: 'GET', patron: `${RUTA_MODELOS}/detector`, manejar: async () => json(manifiesto(DETECTOR, RUTA_MODELOS)) },
+    { metodo: 'GET', patron: `${RUTA_MODELOS}/:id/:version/:archivo`, manejar: crearServirModelo(traer) },
+    { metodo: 'POST', patron: '/ligero', manejar: empezarLigero },
+    { metodo: 'PUT', patron: '/ligero/:subida/partes/:numero', manejar: subirParteLigero },
+    { metodo: 'POST', patron: '/ligero/:subida/completar', manejar: completarLigero },
+  ]);
+  return (peticion, env, props) => enrutar(peticion, { env, dueno: props.dueno, sesion: false, partido: props.partido });
 }
+
+/** La pasarela de cada contenedor: esto con el `env` y los `props` de su partido. */
+export const atenderPasarela = crearPasarela();
 
 export class PasarelaProcesado extends WorkerEntrypoint<Env, PropsPasarela> {
   fetch(peticion: Request): Promise<Response> {
