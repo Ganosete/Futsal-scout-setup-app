@@ -1,0 +1,203 @@
+/* --- Zona para soltar el video --- */
+
+.zona-video {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 36px 20px;
+  text-align: center;
+  background: var(--superficie-2);
+  border: 2px dashed var(--borde-fuerte);
+  border-radius: var(--radio);
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.zona-video:hover,
+.arrastrando .zona-video {
+  background: var(--acento-suave);
+  border-color: var(--acento);
+}
+
+.solo-visual:focus-visible + .zona-video {
+  border-color: var(--acento);
+  outline: 3px solid var(--anillo-foco);
+  outline-offset: 2px;
+}
+
+.zona-icono {
+  width: 36px;
+  height: 36px;
+  fill: none;
+  stroke: var(--acento);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.zona-titulo {
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+/* En una pantalla tactil no se arrastra nada: alli solo se toca. */
+.solo-tactil {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .solo-tactil {
+    display: inline;
+  }
+
+  .solo-raton {
+    display: none;
+  }
+}
+
+.zona-texto,
+.zona-nota {
+  color: var(--texto-suave);
+}
+
+.zona-nota {
+  font-size: 0.85rem;
+}
+
+.zona-enlace {
+  color: var(--acento);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* --- Ficha del video elegido --- */
+
+.ficha {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  background: var(--superficie-2);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.arrastrando .ficha {
+  border-color: var(--acento);
+}
+
+.ficha-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ficha-nombre {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Cada dato ocupa lo que mide su texto: «640×360 · 25 fps · H.264» no se parte en dos. */
+.datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 32px;
+  margin: 0;
+}
+
+.datos:empty {
+  display: none;
+}
+
+.dato dt {
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+}
+
+.dato dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.problemas {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.problema {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-left: 4px solid;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.problema-nivel {
+  min-width: 3.5em;
+}
+
+.problema-error {
+  background: var(--error-fondo);
+  border-color: var(--error);
+}
+
+.problema-error .problema-nivel {
+  color: var(--error);
+}
+
+.problema-aviso {
+  background: var(--aviso-fondo);
+  border-color: var(--aviso);
+}
+
+.problema-aviso .problema-nivel {
+  color: var(--aviso);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zona-video {
+    transition: none;
+  }
+}
+
+/* --- «¿Grabas con Veo?» --- */
+
+.ayuda-veo {
+  margin-top: 14px;
+  padding: 10px 14px;
+  font-size: 0.92rem;
+  background: var(--superficie-2);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.ayuda-veo summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ayuda-veo summary:focus-visible {
+  outline: 3px solid var(--anillo-foco);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ayuda-veo p {
+  margin: 8px 0 0;
+  color: var(--texto-suave);
+}
+
+/* El naranja del acento no llega al contraste de texto pequeno: el enlace va del color del texto, subrayado. */
+.ayuda-veo a {
+  color: var(--texto);
+  font-weight: 600;
+  text-underline-offset: 2px;
+}

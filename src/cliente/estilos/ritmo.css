@@ -1,0 +1,231 @@
+/* «Ritmo del partido» (cliente/ritmo/graficoRitmo.ts), en el editor y en la pagina de los jugadores. */
+.ritmo-jugadores {
+  display: grid;
+  gap: 10px;
+}
+
+.ritmo-encabezado {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.ritmo-nota {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.ritmo-grafico {
+  display: grid;
+  gap: 16px;
+}
+
+.ritmo-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+.ritmo-clave {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ritmo-muestra {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+/* El color va en la marca, nunca en el texto. */
+.serie-local {
+  background: var(--equipo-local);
+  fill: var(--equipo-local);
+}
+
+.serie-visitante {
+  background: var(--equipo-visitante);
+  fill: var(--equipo-visitante);
+}
+
+.serie-sinEquipo {
+  background: var(--sin-equipo);
+  fill: var(--sin-equipo);
+}
+
+.ritmo-totales {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ritmo-total {
+  display: grid;
+  grid-template-columns: 6.5em 1fr auto;
+  gap: 12px;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.ritmo-total-nombre {
+  color: var(--texto-suave);
+}
+
+/* La barra fina: 8 px, los extremos redondos y 2 px de superficie entre trozos. */
+.ritmo-barra {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.ritmo-barra > span {
+  min-width: 2px;
+}
+
+.ritmo-total-cifras {
+  font-variant-numeric: tabular-nums;
+}
+
+.ritmo-parte {
+  margin: 0;
+}
+
+.ritmo-titulo {
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.ritmo-lienzo {
+  position: relative;
+}
+
+.ritmo-svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.ritmo-rejilla {
+  stroke: var(--borde);
+  stroke-width: 1;
+}
+
+.ritmo-base {
+  stroke: var(--borde-fuerte);
+  stroke-width: 1;
+}
+
+.ritmo-eje {
+  fill: var(--texto-suave);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ritmo-zona {
+  fill: transparent;
+  outline: none;
+}
+
+.ritmo-zona:focus-visible {
+  stroke: var(--acento);
+  stroke-width: 2;
+}
+
+.ritmo-svg.con-foco .ritmo-columna {
+  opacity: 0.45;
+}
+
+.ritmo-svg.con-foco .ritmo-columna.activa {
+  opacity: 1;
+}
+
+.ritmo-aviso {
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  pointer-events: none;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  box-shadow: var(--sombra);
+}
+
+.ritmo-aviso[hidden] {
+  display: none;
+}
+
+.ritmo-aviso-titulo {
+  margin: 0 0 4px;
+  color: var(--texto-suave);
+}
+
+.ritmo-aviso-fila {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 0;
+}
+
+/* En el aviso, la serie se dice con un trazo corto, no con una caja. */
+.ritmo-linea {
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.ritmo-tabla summary {
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.ritmo-tabla table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ritmo-tabla th,
+.ritmo-tabla td {
+  padding: 4px 8px;
+  text-align: right;
+  border-bottom: 1px solid var(--borde);
+}
+
+.ritmo-tabla th:first-child {
+  text-align: left;
+  font-weight: 400;
+}
+
+.ritmo-fila-total th,
+.ritmo-fila-total td {
+  font-weight: 600;
+}
+
+@media (max-width: 560px) {
+  /* Estrecho: el nombre y las cifras arriba, la barra debajo a todo lo ancho. */
+  .ritmo-total {
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+  }
+
+  .ritmo-barra {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

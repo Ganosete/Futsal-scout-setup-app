@@ -1,0 +1,50 @@
+/* --- Seccion «Jugadas»: analisis y fragmentos --- */
+
+.analisis-controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.progreso {
+  display: flex;
+  flex: 1 1 200px;
+  align-items: center;
+  gap: 10px;
+}
+
+.progreso progress {
+  flex: 1;
+  height: 8px;
+  accent-color: var(--acento);
+}
+
+.porcentaje {
+  min-width: 3.5em;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.estado-analisis {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.estado-analisis:empty {
+  display: none;
+}
+
+.resultado {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.resumen {
+  margin: 0;
+  font-weight: 650;
+}
