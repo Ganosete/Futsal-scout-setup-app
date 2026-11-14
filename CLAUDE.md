@@ -194,6 +194,25 @@ Si se cambia algo, la línea `Cambios:` dice qué y por qué. Sus pruebas se cop
   el Dockerfile lo copia de ahí, así que sin compilarlo antes no se construye la imagen.
 - **Los jugadores ven la versión ligera si la hay** (`procesados.ligero_tamano`); el entrenador,
   siempre el original. Lo que se bajan los jugadores sale de la ligera.
+- **«Quién ataca» en el servidor** (`contenedor/equipos.ts`) usa el mismo núcleo que el navegador
+  (`nucleo/equipos/fotograma.ts`): si cambia lo que se guarda de cada fotograma, cambia en los dos.
+  ffmpeg apila las dos imágenes de cada fotograma (la del color arriba, el cuadrado del detector
+  debajo) para que lleguen por una sola tubería. Con `fps=3:start_time=0:round=up`, el fotograma k
+  es el que se ve en `desde + k/3` y el primero, el primero que empieza en `desde` o después
+  (medido con un vídeo cuyo color es el número de fotograma); se guarda el instante pedido.
+- **onnxruntime-node no va en `package.json`**: son 300 MB en cada `npm ci`. Lo instala el
+  Dockerfile sin CUDA (`ONNXRUNTIME_NODE_INSTALL=skip`) y quitando lo que no es linux/x64; en el
+  código, sus tipos son los de `onnxruntime-common` (`contenedor/onnxruntime-node.d.ts`).
+  `tests/contenedor/imagen.test.ts` comprueba que las versiones del Dockerfile, de
+  onnxruntime-common y de onnxruntime-web son la misma. Las pruebas del contenedor usan
+  onnxruntime-web, que tiene el mismo API; la del motor nativo solo corre con la imagen, o con el
+  programa suelto si tiene onnxruntime-node al lado.
+- **Medido con el detector de verdad en 4 vCPU:** 143 ms por fotograma solo el modelo; con la
+  lectura del vídeo, 173 ms en 1080p y 209 ms en 4K. Limitar los hilos de ffmpeg va más lento
+  (185 y 238 ms con uno): se queda con los suyos.
+- **Las detecciones del servidor solo se guardan si no hay** (`If-None-Match: *` en
+  `PUT .../detecciones`); las del navegador, siempre. Si quién ataca falla en el contenedor, el
+  trabajo acaba `hecho` con un aviso: las jugadas y la versión ligera ya están guardadas.
 - **Los medidores de «Mi cuenta» siguen la skill de dataviz** (`cliente/cuenta/medidas.ts`): lista
   con las barras alineadas (subgrid) y la pista del mismo color que el relleno. El naranja del
   acento y el ámbar de «Casi lleno» no se distinguen con daltonismo (lo dice el validador): el

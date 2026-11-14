@@ -51,10 +51,11 @@ una GPU. Falta medirlo todo con partidos reales. Lo que hay:
    se guarda cada partido. «Mi cuenta» enseña lo que usas y deja cambiar de plan, y «Mis partidos»
    dice cuándo se borra cada uno. **El pago es una maqueta:** no pide datos y no cobra nada.
 14. **Procesado en el servidor** (Scout y Pro): al acabar de subir, un contenedor de Cloudflare lee
-   el vídeo, busca las jugadas como el navegador si aún no las hay, y hace una versión ligera a
-   720p, que es la que ven y se bajan los jugadores. Con la casilla «Que busque las jugadas el
-   servidor», el navegador solo sube y se puede cerrar la página en cuanto acaba. «Mis partidos»
-   dice en qué va, y deja pedirlo o reintentarlo.
+   el vídeo, busca las jugadas como el navegador si aún no las hay, hace una versión ligera a
+   720p, que es la que ven y se bajan los jugadores, y busca quién ataca en cada fragmento. Al
+   abrir el partido solo queda decir qué camiseta es la del local. Con la casilla «Que busque las
+   jugadas el servidor», el navegador solo sube y se puede cerrar la página en cuanto acaba. «Mis
+   partidos» dice en qué va, y deja pedirlo o reintentarlo.
 
 **Las cifras de los planes son provisionales** (`src/comun/planes.ts`, un cambio de una línea):
 
@@ -71,7 +72,10 @@ funciona»).
 **Lo que tarda «Quién ataca».** La primera vez descarga el detector (108 MB) y lo guarda en el
 navegador. Con tarjeta gráfica (WebGPU) mira 3 fotogramas por segundo de juego. Sin ella mira uno
 cada 2 s y aun así va despacio: en las pruebas, cada fotograma tardó 1,5 s, así que un partido con
-45 min de juego son unos 35 min. Con WebGPU aún no está medido.
+45 min de juego son unos 35 min. Con WebGPU aún no está medido. En el servidor (Scout y Pro) mira
+los 3 por segundo con 4 vCPU: medido con el detector de verdad, 175 ms por fotograma en 1080p y
+210 ms en 4K, contando la lectura del vídeo. Esos 45 min de juego son unos 25 min, y no hace falta
+tener nada abierto.
 
 ## Qué hará
 
@@ -101,7 +105,8 @@ Navegador del entrenador
   └─ descarga en MP4 sin recodificar, leyendo de R2 solo el clip
 Worker de Cloudflare: la página, la API y la limpieza de cada hora
   └─ un Durable Object por partido con su contenedor (Scout y Pro), en la UE y sin internet:
-     ffmpeg lee el vídeo una vez → jugadas (el mismo núcleo que el navegador) + versión a 720p
+     ffmpeg lee el vídeo una vez → jugadas (el mismo núcleo que el navegador) + versión a 720p;
+     luego, solo los fragmentos → quién ataca (el mismo detector, con onnxruntime nativo)
 R2 (UE): vídeos, versión ligera y jugadas   D1: partidos, enlaces, cuentas y procesado
 Jugadores: /v/<token> → las jugadas, para verlas y descargarlas, sin cuenta (en 720p si la hay)
 ```
@@ -167,10 +172,21 @@ Jugadores: /v/<token> → las jugadas, para verlas y descargarlas, sin cuenta (e
   del navegador ni lo corregido a mano. El contenedor arranca sin internet y sin claves: solo
   alcanza `http://almacen.interno`, que el Durable Object intercepta y atiende una pasarela del
   Worker con acceso a ese partido y a nada más. El Durable Object le pregunta cada 15 s en qué va
-  y lo apunta para la página; si se cae, lo arranca otra vez una vez. **Coste**, sin medir con
-  partidos de verdad: un standard-4 (4 vCPU, 12 GiB) que tardase 40 min con la CPU llena serían
-  unos 0,27 $ (0,19 de CPU, 0,07 de memoria); el plan de pago incluye al mes 375 minutos de vCPU
-  y 25 GiB-hora: unos dos partidos así (la CPU es lo que se acaba antes).
+  y lo apunta para la página; si se cae, lo arranca otra vez una vez.
+- **Quién ataca en el servidor** va al final, con lo demás ya guardado. Se lee cada fragmento
+  aparte, saltando a su inicio: lo de balón parado no se decodifica. ffmpeg saca de cada
+  fotograma las mismas dos imágenes que el navegador (la del color de las camisetas y el cuadrado
+  del detector), y lo que se hace con ellas es el mismo núcleo: las detecciones son las mismas
+  que guarda el navegador, en el mismo fichero. El detector corre con onnxruntime nativo, diez
+  veces más rápido que el de WASM; el contenedor lo pide por la pasarela y comprueba su tamaño y su
+  SHA-256 como el navegador. Si ya se buscó quién ataca, no se repite, y si mientras tanto se
+  busca en el navegador, mandan esas detecciones. Si algo falla aquí, lo de antes vale igual: el
+  partido queda procesado con un aviso para buscarlo desde el partido.
+- **Coste** del procesado: un standard-4 (4 vCPU, 12 GiB) con la CPU llena cuesta unos 0,40 $
+  la hora (0,29 de CPU y 0,11 de memoria). La lectura de un 4K de dos horas está sin medir con
+  partidos de verdad: si fuesen 40 min, unos 0,27 $. Quién ataca sí está medido con el detector:
+  unos 25 min para 45 min de juego, otros 0,16-0,19 $. El plan de pago incluye al mes 375 minutos
+  de vCPU y 25 GiB-hora: más o menos un partido así entero (la CPU es lo que se acaba antes).
 - **El detector** lo trae el Worker de Hugging Face, así que la página no habla con nadie más
   (la CSP solo deja conectar con el propio origen). El navegador comprueba su tamaño y su SHA-256
   y lo guarda en su caché.
@@ -301,7 +317,7 @@ que no alcanzan para guardar las jugadas de un partido muy corregido; el plan de
 | **3. Mejor detección** | ✅ balón fuera con la cámara fija y la pista marcada · ✅ posesión por toques · detector afinado para el balón de sala: los scripts y la app listos, faltan datos y una GPU · medida con partidos reales | 2, 3 |
 | **4. Selección y ritmo** ✅ | Estrellas y filtro de «Mi selección» · vídeo de la selección, unido sin recodificar en el navegador · gráfico del ritmo del partido, también para los jugadores | 7, 8 |
 | **5. Usuarios y planes** ✅ | Entrar con el email (código, sin contraseñas) · planes Gratuito, Scout y Pro con límites de partidos, almacenamiento y días · «Mi cuenta» con lo que se usa · cambio de plan con el pago en maqueta · limpieza de cada hora | 10 |
-| **6. Procesado en servidor** ✅ | Cloudflare Containers: las jugadas sin el navegador abierto (el mismo núcleo, con ffmpeg) y versión ligera a 720p para los jugadores · medida con partidos reales · «Quién ataca» en el servidor, que es lo que más tarda sin tarjeta gráfica | — |
+| **6. Procesado en servidor** ✅ | Cloudflare Containers: las jugadas sin el navegador abierto (el mismo núcleo, con ffmpeg) y versión ligera a 720p para los jugadores · ✅ «Quién ataca» en el servidor, con onnxruntime nativo · medida con partidos reales | — |
 | **7. Importar desde Veo** | Solo tras revisar sus condiciones de uso | 9 |
 
 **Lo que se espera de la detección, sin adornar:** las faltas, los goles, los tiempos muertos y el
@@ -391,7 +407,7 @@ src/servidor/    Worker: enrutador mínimo y API
   compartir/       enlaces de los jugadores y lo que ven con ellos
   procesado/       el Durable Object con su contenedor, la pasarela del contenedor y su API
   limpieza.ts      el cron de cada hora: sesiones caducadas y partidos que pasan su plan
-src/contenedor/  El programa del contenedor (Node con ffmpeg): la pasada, el trabajo y su servidor HTTP
+src/contenedor/  El programa del contenedor (Node con ffmpeg): la pasada, quién ataca, el trabajo y su servidor HTTP
 src/comun/       Tipos y funciones puras que usan los dos lados (formatos, validación, filtros,
                  ritmo del partido, planes y cuenta)
 src/nucleo/      Detección, en TypeScript puro y sin DOM (parte copiada de futsal-tracking):
@@ -413,7 +429,7 @@ tools/           Scripts que no forman parte de la aplicación: vídeos y detect
 - [Mediabunny](https://github.com/Vanilagy/mediabunny) (lectura y recorte de vídeo): MPL-2.0. Se
   usa tal cual, sin modificar.
 - [onnxruntime-web](https://github.com/microsoft/onnxruntime) (ejecuta el detector en el
-  navegador): MIT.
+  navegador) y onnxruntime-node (en el contenedor): MIT.
 - El detector, RF-DETR Nano: pesos de Roboflow con licencia Apache 2.0, convertidos a ONNX por
   PierreMarieCurie (MIT). No va en el repositorio: el Worker lo trae de Hugging Face.
 - [FFmpeg](https://ffmpeg.org/), en el contenedor: el paquete de Debian, que con libx264 es GPL. Se
