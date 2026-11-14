@@ -25,9 +25,6 @@ export type RespuestaEquipos =
   | { tipo: 'hecho'; registros: RegistroFotograma[]; backend: Backend; segundosPared: number }
   | { tipo: 'error'; mensaje: string };
 
-/** Tres por segundo bastan para seguir el balon en una jugada; con WebGPU son unos minutos por partido. */
-export const FPS_EQUIPOS = 3;
-
 /**
  * Sin WebGPU el detector va por la CPU: 1,5 s por fotograma medidos con el
  * modelo real en un hilo. Uno cada dos segundos deja un partido en una hora y

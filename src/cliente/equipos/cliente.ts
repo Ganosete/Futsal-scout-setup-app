@@ -1,6 +1,7 @@
 import type { ManifiestoModelo } from '../../comun/modelos';
 import type { Intervalo } from '../../nucleo/balonParado/tramos';
-import { FPS_EQUIPOS, type PeticionEquipos, type RespuestaEquipos } from './protocolo';
+import { FPS_EQUIPOS } from '../../nucleo/equipos/fotograma';
+import type { PeticionEquipos, RespuestaEquipos } from './protocolo';
 
 export type DeteccionHecha = Extract<RespuestaEquipos, { tipo: 'hecho' }>;
 export type Preparado = Extract<RespuestaEquipos, { tipo: 'preparado' }>;
