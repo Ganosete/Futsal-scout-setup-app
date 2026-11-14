@@ -59,6 +59,7 @@ export function textoServidor(s: Procesado | null): string | null {
   if (s.estado === 'trabajando') {
     if (s.fase === 'guardando') return 'En el servidor: guardando las jugadas.';
     if (s.fase === 'subiendo') return `En el servidor: preparando el vídeo para los jugadores (${pct}).`;
+    if (s.fase === 'detectando') return `En el servidor: buscando quién ataca (${pct}).`;
     return `En el servidor: buscando las jugadas (${pct}).`;
   }
   if (s.estado === 'fallo') return s.mensaje ?? 'El servidor no ha podido procesarlo.';

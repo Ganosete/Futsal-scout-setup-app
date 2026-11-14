@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
 import { CLASES_COCO } from '../src/comun/modelos';
+import type { Partido } from '../src/comun/partido';
 import { EQUIPOS, esperarGuardado, esperarSubida, expect, fixture, marcarPista, subirYAnalizar, test } from './ayuda';
 
 // «Quién ataca» con el detector de juguete (tools/crear_modelo_prueba.py): la
@@ -76,6 +77,25 @@ test('lo puesto a mano no lo toca el detector, y al volver otro día basta con c
   await page.reload();
   await expect(page.locator('#pregunta-equipos')).toHaveText(`¿Qué camiseta lleva ${EQUIPOS.local}?`, { timeout: 20_000 });
   await expect(page.locator('#estado-equipos')).toHaveText('Ya se buscó quién ataca en este partido: contesta la pregunta para poner los equipos.');
+});
+
+test('si el servidor también busca quién ataca, el panel lo dice y la lista cuenta en qué va', async ({ page }) => {
+  await subirYAnalizar(page, 'analisis.mp4');
+  await esperarSubida(page);
+  await esperarGuardado(page);
+  // Como si el servidor estuviera en ello: en local no hay contenedores, y la lista se responde desde aqui.
+  await page.route('**/api/partidos', async (ruta) => {
+    if (ruta.request().method() !== 'GET') return ruta.fallback();
+    const r = await ruta.fetch();
+    const { partidos } = (await r.json()) as { partidos: Partido[] };
+    const servidor = { estado: 'trabajando', fase: 'detectando', avance: 0.4, mensaje: null, ligero: true, actualizado: '2026-11-14T10:00:00.000Z' };
+    await ruta.fulfill({ response: r, json: { partidos: partidos.map((x) => ({ ...x, servidor })) } });
+  });
+  await page.reload();
+  await expect(page.locator('#estado-equipos')).toHaveText(
+    'El servidor también está buscando quién ataca en este partido: cuando acabe, al abrirlo bastará con contestar la pregunta. Si no quieres esperar, búscalo aquí.',
+  );
+  await expect(page.locator('#lista-partidos .partido-servidor').first()).toHaveText('En el servidor: buscando quién ataca (40\u00a0%).');
 });
 
 test('con la pista marcada, la posesión se mide por toques', async ({ page }) => {

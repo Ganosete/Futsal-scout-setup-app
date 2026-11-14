@@ -25,6 +25,8 @@ export interface DatosEquipos {
   origen: File | URL;
   idPartido: string | null;
   nombres: DatosNombre;
+  /** El servidor esta con el partido (fase 6): tambien buscara quien ataca, si aun no se ha buscado. */
+  enServidor: boolean;
 }
 
 export interface PanelEquipos {
@@ -203,7 +205,14 @@ export function crearPanelEquipos(editor: Editor): PanelEquipos {
           .leerDetecciones(d.idPartido)
           .then((guardadas) => {
             const r = leerRegistros(guardadas);
-            if (mio !== turno || !r) return;
+            if (mio !== turno) return;
+            if (!r) {
+              // Se puede buscar aqui igual; si acaba antes que el servidor, manda lo de aqui.
+              if (d.enServidor) {
+                decir('El servidor también está buscando quién ataca en este partido: cuando acabe, al abrirlo bastará con contestar la pregunta. Si no quieres esperar, búscalo aquí.');
+              }
+              return;
+            }
             preparar(r, d.nombres.local.trim() || 'el local');
             if (!colores.hidden) decir('Ya se buscó quién ataca en este partido: contesta la pregunta para poner los equipos.');
           })

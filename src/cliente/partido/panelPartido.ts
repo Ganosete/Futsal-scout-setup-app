@@ -16,7 +16,7 @@ import { crearCompartir } from './compartir';
 import { compactarSenales, edicionDeAnalisis } from '../../comun/guardadoAnalisis';
 import { edicionDeEstado, estadoDeEdicion } from './conversion';
 import { subirVideo, type SubidaVideo } from './subidaVideo';
-import { fechaPartido, textoGuardado, tituloPartido } from './textos';
+import { fechaPartido, textoGuardado, tituloPartido, trabajaEnServidor } from './textos';
 
 /**
  * La seccion «Jugadas» de un partido: la subida y el analisis a la vez, y el
@@ -125,7 +125,7 @@ export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
   }
 
   /** El editor con unas jugadas; si hay partido en el servidor, cada cambio se guarda. */
-  function abrirEditor(origen: File | URL, edicion: Edicion, nombre: DatosNombre, id: string | null, etag: string | null): Guardado<Edicion> | null {
+  function abrirEditor(origen: File | URL, edicion: Edicion, nombre: DatosNombre, id: string | null, etag: string | null, enServidor = false): Guardado<Edicion> | null {
     soltarGuardado();
     const g = id
       ? new Guardado<Edicion>({ etag, guardar: (e, v) => api.guardarEdicion(id, e, v), alCambiar: (e) => (estadoGuardado.textContent = textoGuardado(e)) })
@@ -144,7 +144,7 @@ export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
         ritmo.pintar(e, nombre);
       },
     });
-    equipos.abrir({ origen, idPartido: id, nombres: nombre });
+    equipos.abrir({ origen, idPartido: id, nombres: nombre, enServidor });
     pista.pintar(edicion.pista);
     ritmo.pintar(estadoDeEdicion(edicion), nombre);
     return g;
@@ -266,7 +266,7 @@ export function iniciarPanelPartido(o: OpcionesPanel): PanelPartido {
         estadoAnalisis.textContent = 'Este partido aún no tiene jugadas: elige el mismo vídeo en «Nuevo partido» y pulsa «Subir y analizar».';
         return;
       }
-      abrirEditor(api.urlVideo(p.id), g.edicion, p, p.id, g.etag);
+      abrirEditor(api.urlVideo(p.id), g.edicion, p, p.id, g.etag, trabajaEnServidor(p));
       estadoAnalisis.textContent = '';
     } catch (e) {
       if (mio === turno) estadoAnalisis.textContent = `No se ha podido abrir el partido: ${(e as Error).message}`;

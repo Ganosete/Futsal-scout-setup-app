@@ -104,6 +104,7 @@ describe('el procesado en el servidor, en «Mis partidos»', () => {
     expect(textoServidor(S)).toBe('En el servidor: buscando las jugadas (40\u00a0%).');
     expect(textoServidor({ ...S, fase: 'guardando' })).toBe('En el servidor: guardando las jugadas.');
     expect(textoServidor({ ...S, fase: 'subiendo', avance: 0.6 })).toBe('En el servidor: preparando el vídeo para los jugadores (60\u00a0%).');
+    expect(textoServidor({ ...S, fase: 'detectando', avance: 0.25 })).toBe('En el servidor: buscando quién ataca (25\u00a0%).');
   });
 
   it('al acabar: los avisos del analisis, o que ya hay version ligera; un fallo dice el suyo', () => {
