@@ -167,3 +167,37 @@
     transition: none;
   }
 }
+
+/* --- «¿Grabas con Veo?» --- */
+
+.ayuda-veo {
+  margin-top: 14px;
+  padding: 10px 14px;
+  font-size: 0.92rem;
+  background: var(--superficie-2);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+}
+
+.ayuda-veo summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ayuda-veo summary:focus-visible {
+  outline: 3px solid var(--anillo-foco);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.ayuda-veo p {
+  margin: 8px 0 0;
+  color: var(--texto-suave);
+}
+
+/* El naranja del acento no llega al contraste de texto pequeno: el enlace va del color del texto, subrayado. */
+.ayuda-veo a {
+  color: var(--texto);
+  font-weight: 600;
+  text-underline-offset: 2px;
+}

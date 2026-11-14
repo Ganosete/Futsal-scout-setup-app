@@ -75,6 +75,24 @@ test('local y visitante no pueden ser el mismo equipo', async ({ page }) => {
   await expect(page.getByLabel('Equipo visitante')).toHaveAttribute('aria-invalid', 'true');
 });
 
+test('«¿Grabas con Veo?» explica cómo traer el partido, sin conectarse con Veo', async ({ page }) => {
+  const ayuda = page.locator('#ayuda-veo');
+  const texto = ayuda.getByText('Descarga el partido entero desde Veo');
+  // Cerrado al llegar: no estorba a quien no graba con Veo.
+  await expect(texto).toBeHidden();
+  // Se abre con el teclado, como cualquier desplegable.
+  await ayuda.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  await expect(texto).toBeVisible();
+  await expect(ayuda).toContainText('no se conecta con Veo ni te pide su contraseña');
+  await expect(ayuda).toContainText('no marques la pista');
+  const enlace = ayuda.getByRole('link', { name: 'su ayuda (en inglés)' });
+  await expect(enlace).toHaveAttribute('href', 'https://support.veo.com/hc/en-us/articles/4451733961361');
+  // En otra pestaña y sin que Veo sepa de dónde se viene.
+  await expect(enlace).toHaveAttribute('target', '_blank');
+  await expect(enlace).toHaveAttribute('rel', 'noopener noreferrer');
+});
+
 test('la API responde en /api/salud', async ({ request }) => {
   const r = await request.get('/api/salud');
   expect(r.ok()).toBe(true);
